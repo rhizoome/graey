@@ -1,0 +1,25 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "<6"
+pdbpp = "<1"
+black = "==19.10b0"
+vmprof = "<1"
+isort = "<5"
+python-language-server = "<1"
+flake8 = "<4"
+flake8-isort = "<3"
+flake8-string-format = "<1"
+flake8-tuple = "<1"
+ipdb = "<1"
+
+[packages]
+gr-y = {editable = true,extras = ["fast"],path = "."}
+matplotlib = "*"
+jinja2 = "*"
+
+[requires]
+python_version = "3"
