@@ -30,8 +30,8 @@ Meta = namedtuple("Meta", ("timestamp", "cmd"))
 Add = namedtuple("Add", ("uuid", "task", "action", "duration"))
 Del = namedtuple("Del", ("uuid"))
 Done = namedtuple("Done", ("uuid", "duration"))
-Set = namedtuple("Set", ("count"))
-cmds = {"add": Add, "del": Del, "done": Done, "set": Set}
+Gry = namedtuple("Gry", ("count"))
+cmds = {"add": Add, "del": Del, "done": Done, "gry": Gry}
 cmds_inv = invert(cmds)
 
 
@@ -150,15 +150,15 @@ def tasks():
 main.add_command(tasks)
 
 
-@click.command("set", help="set gräy COUNT")
+@click.command("gry", help="set gräy COUNT")
 @click.argument("COUNT", nargs=1, type=click.INT)
-def set_(count):
+def gry(count):
     with codecs.open("gräy.db", "a+") as f:
-        s = serialize(f, Set(count))
+        s = serialize(f, Gry(count))
         f.write(f"{s}\n")
 
 
-main.add_command(set_)
+main.add_command(gry)
 
 
 @click.command(help="display stats")
@@ -260,7 +260,6 @@ def calculate(state):
         factor = (state.duration / state.done) / (state.estimate / state.all)
     else:
         factor = 1
-    print(state, factor)
     # avg_duration = avg_task_duration(state, factor)
     estimate = state.estimate * factor  # + state.gräy * avg_duration
     done = state.duration
@@ -283,7 +282,7 @@ def update_state(state, line):
             open=state.open + 1,
             estimate=state.estimate + cmd.duration,
         )
-    if meta.cmd == "set":
+    if meta.cmd == "gry":
         return state.set(gräy=cmd.count)
     key = actions[cmd.uuid].task
     task = tasks[key]
