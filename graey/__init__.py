@@ -158,8 +158,12 @@ def tasks():
     state = None
     for state in get_states():
         pass
+    if not state:
+        return
     table = []
     tasks = state.tasks
+    if not tasks:
+        return
     factor = calc_factor(state)
     for idx in tasks.keys():
         task = tasks[idx]
