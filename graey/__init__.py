@@ -1,4 +1,5 @@
 import codecs
+import os
 from collections import OrderedDict, namedtuple
 from datetime import datetime
 from subprocess import CalledProcessError, check_output
@@ -194,6 +195,7 @@ def stats():
     states = list(get_states())
     calc = [calculate(state) for state in states]
     last = states[-1]
+    lastc = calc[-1]
     tasks = 0
     tasks_open = 0
     tasks_done = 0
@@ -203,15 +205,16 @@ def stats():
             tasks_open += 1
         else:
             tasks_done += 1
-    print(f"Actions:          {last.all}")
-    print(f"Actions (done):   {last.done}")
-    print(f"Actions (open):   {last.open}")
-    print(f"Tasks:            {tasks}")
-    print(f"Tasks (done):     {tasks_done}")
-    print(f"Tasks (open):     {tasks_open}")
-
-    (part, len_calc, start_est, grad_est, start_dur, grad_dur) = gradient(calc)
-    print(start_dur, grad_dur)
+    _, start, end, grad = predict(calc)
+    pred = end[0] + (end[1] / grad[1] * grad[0])
+    print(f"Actions:                 {last.all}")
+    print(f"Actions (done):          {last.done}")
+    print(f"Actions (open):          {last.open}")
+    print(f"Tasks:                   {tasks}")
+    print(f"Tasks (done):            {tasks_done}")
+    print(f"Tasks (open):            {tasks_open}")
+    print(f"Estimate:             {lastc[0]:8.2f}")
+    print(f"Estimate (predicted): {pred:8.2f}")
 
 
 main.add_command(stats)
@@ -256,11 +259,12 @@ main.add_command(csv)
 
 def get_default_est():
     estimate = 1.0
-    with codecs.open("graey.db", "r") as f:
-        for line in f:
-            meta, cmd = deserialize(line)
-            if meta.cmd == "est":
-                estimate = cmd.estimate
+    if os.path.exists("graey.db"):
+        with codecs.open("graey.db", "r") as f:
+            for line in f:
+                meta, cmd = deserialize(line)
+                if meta.cmd == "est":
+                    estimate = cmd.estimate
     return estimate
 
 
@@ -283,20 +287,19 @@ def plot_effort(ax, calc):
     ax.set_ylabel("open effort (hours)")
 
 
-def gradient(calc):
-    len_calc = len(calc)
-    part = min(len_calc // 3, max_trend)
-    start_est = calc[-part][0]
-    start_dur = calc[-part][1]
-    grad_est = (calc[-1][0] - start_est) / part
-    grad_dur = (calc[-1][1] - start_dur) / part
-    return (part, len_calc, start_est, grad_est, start_dur, grad_dur)
+def predict(calc):
+    steps = len(calc)
+    part = min(steps // 3, max_trend)
+    start = calc[-part]
+    end = calc[-1]
+    grad = ((end[0] - start[0]) / part, (end[1] - start[1]) / part)
+    return (steps, start, end, grad)
 
 
 def plot_velocity(ax, calc):
-    (part, len_calc, start_est, grad_est, start_dur, grad_dur) = gradient(calc)
-    xs = np.linspace(start_est, start_est + grad_est * len_calc, max(len_calc, 20))
-    ys = np.linspace(start_dur, start_dur + grad_dur * len_calc, max(len_calc, 20))
+    steps, start, end, grad = predict(calc)
+    xs = np.linspace(start[0], start[0] + grad[0] * steps, max(steps, 20))
+    ys = np.linspace(start[1], start[1] + grad[1] * steps, max(steps, 20))
     ds = xs - ys
     zero = np.where(np.diff(np.sign(ds)))[0][0] + 2
     ax.plot(xs[:zero], ds[:zero])
@@ -316,11 +319,14 @@ def plot():
 
 def get_states():
     state = State()
-    with codecs.open("graey.db", "r") as f:
-        for line in f:
-            line = deserialize(line)
-            state = update_state(state, line)
-            yield state
+    if os.path.exists("graey.db"):
+        with codecs.open("graey.db", "r") as f:
+            for line in f:
+                line = deserialize(line)
+                state = update_state(state, line)
+                yield state
+    else:
+        nodb()
 
 
 def avg_task_duration(state, factor):
@@ -411,15 +417,18 @@ def update_state(state, line):
 def get_table():
     state = OrderedDict()
     count = 0
-    with codecs.open("graey.db", "r") as f:
-        for line in f:
-            meta, cmd = deserialize(line)
-            if meta[1] == "add":
-                state[cmd.uuid] = cmd
-            elif meta[1] == "set":
-                count = int(cmd.count)
-            else:
-                del state[cmd.uuid]
+    if os.path.exists("graey.db"):
+        with codecs.open("graey.db", "r") as f:
+            for line in f:
+                meta, cmd = deserialize(line)
+                if meta[1] == "add":
+                    state[cmd.uuid] = cmd
+                elif meta[1] == "set":
+                    count = int(cmd.count)
+                else:
+                    del state[cmd.uuid]
+    else:
+        nodb()
 
     table = []
     n = 1
@@ -445,6 +454,11 @@ def deserialize(ser):
     return meta, cmd
 
 
+def nodb():
+    raise click.ClickException(db_error)
+
+
+db_error = "graey.db does not exist"
 minute_error = """A duration has the format HHMM, the minute part must always be lower than 60
 
 Correct: 20, 100, 0120, 120, 230, 0359
