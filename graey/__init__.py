@@ -276,34 +276,40 @@ def duration_to_hours(duration):
     return (60 * hours + minutes) / 60
 
 
+def predict(calc):
+    steps = len(calc)
+    part = min(steps // 3, max_trend)
+    if not part:
+        part = steps
+    start = calc[-part]
+    end = calc[-1]
+    grad = ((end[0] - start[0]) / part, (end[1] - start[1]) / part)
+    return (part, start, end, grad)
+
+
 def plot_effort(ax, calc):
     xs = []
     ys = []
     for x, y in calc:
         xs.append(x)
         ys.append(x - y)
-    ax.plot(xs, ys)
+    ax.plot(xs, ys, zorder=10)
     ax.set_xlabel("estimated effort (hours)")
     ax.set_ylabel("open effort (hours)")
 
 
-def predict(calc):
-    steps = len(calc)
-    part = min(steps // 3, max_trend)
-    start = calc[-part]
-    end = calc[-1]
-    grad = ((end[0] - start[0]) / part, (end[1] - start[1]) / part)
-    return (steps, start, end, grad)
-
-
 def plot_velocity(ax, calc):
-    steps, start, end, grad = predict(calc)
-    xs = np.linspace(start[0], start[0] + grad[0] * steps, max(steps, 20))
-    ys = np.linspace(start[1], start[1] + grad[1] * steps, max(steps, 20))
+    part, start, end, grad = predict(calc)
+    trend = max(part, 20)
+    xs = np.linspace(start[0], start[0] + grad[0] * trend, trend)
+    ys = np.linspace(start[1], start[1] + grad[1] * trend, trend)
     ds = xs - ys
-    zero = np.where(np.diff(np.sign(ds)))[0][0] + 2
-    ax.plot(xs[:zero], ds[:zero])
-    return zero
+    try:
+        zero = np.where(np.diff(np.sign(ds)))[0][0] + 2
+    except IndexError:
+        zero = trend
+    ax.plot(xs[:zero], ds[:zero], zorder=1)
+    return part
 
 
 def plot():
@@ -311,8 +317,8 @@ def plot():
     calc = [calculate(state) for state in states]
     fig, ax = plt.subplots()
     plot_effort(ax, calc)
-    data_points = plot_velocity(ax, calc)
-    ax.legend(["data", f"trend ({data_points} data-points)"])
+    part = plot_velocity(ax, calc)
+    ax.legend(["data", f"trend ({part} data-points)"])
     plt.title("Effort proportion")
     return fig, ax
 
