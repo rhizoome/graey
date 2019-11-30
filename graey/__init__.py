@@ -183,7 +183,7 @@ def tasks():
         )
     )
     factor = calc_factor(state)
-    print(f"Average: {avg_task_duration(state, factor)}")
+    print(f"Average estimate: {avg_task_estimate(state, factor)}")
 
 
 main.add_command(tasks)
@@ -369,19 +369,22 @@ def get_states():
         nodb()
 
 
-def avg_task_duration(state, factor):
+def avg_task_estimate(state, factor):
     tasks = state.tasks
     if tasks:
-        duration = 0
+        estimate = 0
         for task in tasks.values():
-            open = task.open
-            done = task.done
             all = task.all
-            if all < 4 and open > 0:
-                open += 4 - all
-            assert open + done >= 4
-            duration += open * state.default_est * factor + task.duration
-        return duration / len(tasks)
+            unknown = 0
+            if all < 4:
+                unknown = 4 - all
+            estimate += (
+                unknown * state.default_est * factor
+                + (task.estimate - task.duration) * factor
+                + task.duration
+            )
+
+        return estimate / len(tasks)
     else:
         return state.default_est * 4
 
@@ -395,8 +398,8 @@ def calc_factor(state):
 
 def calculate(state):
     factor = calc_factor(state)
-    avg_duration = avg_task_duration(state, factor)
-    estimate = state.estimate * factor + state.graey * avg_duration
+    avg_estimate = avg_task_estimate(state, factor)
+    estimate = state.estimate * factor + state.graey * avg_estimate
     done = state.duration
     assert estimate >= done
     return estimate, done
