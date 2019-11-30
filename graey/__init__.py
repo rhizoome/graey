@@ -439,7 +439,7 @@ def get_table():
                     state[cmd.uuid] = cmd
                 elif meta[1] == "set":
                     count = int(cmd.count)
-                else:
+                elif meta[1] in ("del", "done"):
                     del state[cmd.uuid]
     else:
         nodb()
