@@ -112,7 +112,10 @@ def show(task):
     if table:
         print(
             tt.to_string(
-                table, header=["id", "task", "action"], style=tt.styles.booktabs
+                table,
+                header=["id", "task", "action"],
+                style=tt.styles.booktabs,
+                alignment="r",
             )
         )
     print(f"  Gräy: {count}")
@@ -157,9 +160,28 @@ def tasks():
         pass
     table = []
     tasks = state.tasks
-    for task in tasks.keys():
-        table.append((task, tasks[task].duration))
-    print(tt.to_string(table, header=["task", "duration"], style=tt.styles.booktabs))
+    factor = calc_factor(state)
+    for idx in tasks.keys():
+        task = tasks[idx]
+        est = task.estimate
+        rem = est - task.duration
+        table.append(
+            (idx, fmt(task.estimate), fmt(rem), fmt(est * factor), fmt(rem * factor))
+        )
+    print(
+        tt.to_string(
+            table,
+            alignment="r",
+            header=[
+                "task",
+                "estimate",
+                "remaining",
+                "estimate (corr)",
+                "remaining (corr)",
+            ],
+            style=tt.styles.booktabs,
+        )
+    )
     factor = calc_factor(state)
     print(f"Average: {avg_task_duration(state, factor)}")
 
@@ -263,6 +285,10 @@ def csv():
 
 
 main.add_command(csv)
+
+
+def fmt(value):
+    return f"{value:8.2f}"
 
 
 def get_default_est():
