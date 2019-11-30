@@ -256,12 +256,12 @@ def stats():
     rem = last.estimate - last.duration
     rem_corr = lastc[0] - last.duration
     rem_pred = pred - last.duration
-    print(f"Actions:                   {last.all}")
-    print(f"Actions (done):            {last.done}")
-    print(f"Actions (open):            {last.open}")
-    print(f"Tasks:                     {tasks}")
-    print(f"Tasks (done):              {tasks_done}")
-    print(f"Tasks (open):              {tasks_open}")
+    print(f"Actions:                    {last.all}")
+    print(f"Actions (done):             {last.done}")
+    print(f"Actions (open):             {last.open}")
+    print(f"Tasks:                      {tasks}")
+    print(f"Tasks (done):               {tasks_done}")
+    print(f"Tasks (open):               {tasks_open}")
     print(f"Estimate:               {last.estimate:8.2f}h")
     print(f"Estimate (corrected):   {lastc[0]:8.2f}h")
     print(f"Estimate (predicted):   {pred:8.2f}h")
