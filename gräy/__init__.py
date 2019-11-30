@@ -8,7 +8,6 @@ import click
 import matplotlib
 import matplotlib.pyplot as plt
 import mpld3
-import numpy as np
 import pytz
 import termtables as tt
 from pyrsistent import PRecord, field, pmap
@@ -39,7 +38,8 @@ cmds_inv = invert(cmds)
 
 
 class Task(PRecord):
-    count = field(initial=0)
+    open = field(initial=0)
+    done = field(initial=0)
     duration = field(initial=0)
 
 
@@ -207,10 +207,9 @@ def plot():
         xs.append(x)
         ys.append(x - y)
     ax.plot(xs, ys)
-    ax.legend("bla")
     ax.set_xlabel("estimated effort (hours)")
     ax.set_ylabel("open effort (hours)")
-    plt.title("gräy")
+    plt.title("Effort proportion")
     return fig, ax
 
 
@@ -223,23 +222,29 @@ def get_states():
             yield state
 
 
-def avg_task_duration(state):
+def avg_task_duration(state, factor):
     tasks = state.tasks
     if tasks:
-        avg_duration = sum((task.duration for task in tasks.values())) / len(tasks)
-        if avg_duration < 4:
-            avg_duration = 4
+        duration = 0
+        for task in tasks.values():
+            open = task.open
+            done = task.done
+            actions = open + done
+            if actions < 4:
+                open += 4 - actions
+            assert open + done >= 4
+            duration += open * factor + task.duration
+        return duration / len(tasks)
     else:
-        avg_duration = 4
-    return avg_duration
+        return action_duration * 4
 
 
 def calculate(state):
-    avg_duration = avg_task_duration(state)
     if state.done:
         factor = state.duration / (state.done * action_duration)
     else:
         factor = 1
+    avg_duration = avg_task_duration(state, factor)
     estimate = (
         state.open * action_duration * factor
         + state.duration
@@ -257,7 +262,7 @@ def update_state(state, line):
     if meta.cmd == "add":
         actions = actions.set(cmd.uuid, cmd)
         task = tasks.get(cmd.task, default_task)
-        task = task.set(count=task.count + 1)
+        task = task.set(open=task.open + 1)
         tasks = tasks.set(cmd.task, task)
         state = state.set(actions=actions, tasks=tasks)
         return state.set(open=state.open + 1)
@@ -266,12 +271,19 @@ def update_state(state, line):
     key = actions[cmd.uuid].task
     task = tasks[key]
     if meta.cmd == "del":
-        tasks = tasks.set(key, task.set(count=task.count - 1))
+        tasks = tasks.set(key, task.set(open=task.open - 1))
         actions = actions.remove(cmd.uuid)
         state = state.set(actions=actions, tasks=tasks)
         return state.set(open=state.open - 1)
     if meta.cmd == "done":
-        tasks = tasks.set(key, task.set(duration=task.duration + cmd.duration))
+        tasks = tasks.set(
+            key,
+            task.set(
+                open=task.open - 1,
+                done=task.done + 1,
+                duration=task.duration + cmd.duration,
+            ),
+        )
         actions = actions.remove(cmd.uuid)
         state = state.set(actions=actions, tasks=tasks)
         state = state.set(duration=state.duration + cmd.duration)

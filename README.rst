@@ -13,7 +13,8 @@ Gräy task
            time of known tasks.
 
 Task
-            A task is built from actions. An action is always an hour long.
+           A task is built from actions. An action is always an hour long. We
+           always assume that a task has at least 4 actions.
 
 Actions
            Actions are the things needed to complete a task. The user has to try
@@ -33,3 +34,8 @@ Formulas
            * estimate = (gräy * avg(task) + sum(task)) * factor
 
            * done     = sum(duration)
+
+TODO
+====
+
+* Add init db function, which can take an action_duration
