@@ -237,10 +237,14 @@ def avg_task_duration(state):
 def calculate(state):
     avg_duration = avg_task_duration(state)
     if state.done:
-        factor = state.duration / state.done
+        factor = state.duration / (state.done * action_duration)
     else:
         factor = 1
-    estimate = state.open * factor + state.duration + state.gräy * avg_duration
+    estimate = (
+        state.open * action_duration * factor
+        + state.duration
+        + state.gräy * avg_duration
+    )
     done = state.duration
     assert estimate >= done
     return estimate, done
