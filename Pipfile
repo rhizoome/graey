@@ -15,6 +15,7 @@ flake8-isort = "<3"
 flake8-string-format = "<1"
 flake8-tuple = "<1"
 ipdb = "<1"
+prompt-toolkit = "<3"
 
 [packages]
 graey = {editable = true,extras = ["fast"],path = "."}

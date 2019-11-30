@@ -18,6 +18,8 @@ try:
 except ModuleNotFoundError:
     import json
 
+max_trend = 20
+
 
 def invert(dict_):
     ret = {}
@@ -157,7 +159,8 @@ def tasks():
     for task in tasks.keys():
         table.append((task, tasks[task].duration))
     print(tt.to_string(table, header=["task", "duration"], style=tt.styles.booktabs))
-    print(f"Average: {avg_task_duration(state)} (cannot be smaller than 4)")
+    factor = calc_factor(state)
+    print(f"Average: {avg_task_duration(state, factor)}")
 
 
 main.add_command(tasks)
@@ -188,7 +191,27 @@ main.add_command(est)
 
 @click.command(help="display stats")
 def stats():
-    pass
+    states = list(get_states())
+    calc = [calculate(state) for state in states]
+    last = states[-1]
+    tasks = 0
+    tasks_open = 0
+    tasks_done = 0
+    for task in last.tasks.values():
+        tasks += 1
+        if task.open:
+            tasks_open += 1
+        else:
+            tasks_done += 1
+    print(f"Actions:          {last.all}")
+    print(f"Actions (done):   {last.done}")
+    print(f"Actions (open):   {last.open}")
+    print(f"Tasks:            {tasks}")
+    print(f"Tasks (done):     {tasks_done}")
+    print(f"Tasks (open):     {tasks_open}")
+
+    (part, len_calc, start_est, grad_est, start_dur, grad_dur) = gradient(calc)
+    print(start_dur, grad_dur)
 
 
 main.add_command(stats)
@@ -260,25 +283,30 @@ def plot_effort(ax, calc):
     ax.set_ylabel("open effort (hours)")
 
 
-def plot_velocity(ax, calc):
+def gradient(calc):
     len_calc = len(calc)
-    part = len_calc // 3
+    part = min(len_calc // 3, max_trend)
     start_est = calc[-part][0]
     start_dur = calc[-part][1]
     grad_est = (calc[-1][0] - start_est) / part
     grad_dur = (calc[-1][1] - start_dur) / part
-    xs = np.linspace(start_est, start_est + grad_est * len_calc, len_calc)
-    ys = np.linspace(start_dur, start_dur + grad_dur * len_calc, len_calc)
+    return (part, len_calc, start_est, grad_est, start_dur, grad_dur)
+
+
+def plot_velocity(ax, calc):
+    (part, len_calc, start_est, grad_est, start_dur, grad_dur) = gradient(calc)
+    xs = np.linspace(start_est, start_est + grad_est * len_calc, max(len_calc, 20))
+    ys = np.linspace(start_dur, start_dur + grad_dur * len_calc, max(len_calc, 20))
     ds = xs - ys
-    zero = np.where(np.diff(np.sign(ds)))[0][0]
+    zero = np.where(np.diff(np.sign(ds)))[0][0] + 2
     ax.plot(xs[:zero], ds[:zero])
     return zero
 
 
 def plot():
-    fig, ax = plt.subplots()
     states = list(get_states())
     calc = [calculate(state) for state in states]
+    fig, ax = plt.subplots()
     plot_effort(ax, calc)
     data_points = plot_velocity(ax, calc)
     ax.legend(["data", f"trend ({data_points} data-points)"])
@@ -303,7 +331,7 @@ def avg_task_duration(state, factor):
             open = task.open
             done = task.done
             all = task.all
-            if all < 4:
+            if all < 4 and open > 0:
                 open += 4 - all
             assert open + done >= 4
             duration += open * state.default_est * factor + task.duration
@@ -312,11 +340,15 @@ def avg_task_duration(state, factor):
         return state.default_est * 4
 
 
-def calculate(state):
+def calc_factor(state):
     if state.duration and state.done and state.open:
-        factor = (state.duration / state.done) / (state.estimate / state.all)
+        return (state.duration / state.done) / (state.estimate / state.all)
     else:
-        factor = 1
+        return 1
+
+
+def calculate(state):
+    factor = calc_factor(state)
     avg_duration = avg_task_duration(state, factor)
     estimate = state.estimate * factor + state.graey * avg_duration
     done = state.duration
