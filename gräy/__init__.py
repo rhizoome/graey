@@ -1,10 +1,14 @@
 import codecs
-from collections import OrderedDict, defaultdict, namedtuple
+from collections import OrderedDict, namedtuple
 from datetime import datetime
+from subprocess import CalledProcessError, check_output
 from uuid import uuid4
 
 import click
+import matplotlib
+import matplotlib.pyplot as plt
 import mpld3
+import numpy as np
 import pytz
 import termtables as tt
 from pyrsistent import PRecord, field, pmap
@@ -159,8 +163,17 @@ main.add_command(stats)
 
 @click.command(help="display graph")
 def graph():
-    for state in get_states():
-        print(calculate(state))
+    matplotlib.use("TkAgg")
+    fig, ax = plot()
+    try:
+        out = check_output(["xrdb", "-query"])
+        for line in out.decode("UTF-8").splitlines():
+            if line.startswith("Xft.dpi"):
+                splt = [x for x in line.split() if x]
+                fig.set_dpi(int(splt[1]))
+    except CalledProcessError:
+        pass
+    plt.show()
 
 
 main.add_command(graph)
@@ -168,10 +181,37 @@ main.add_command(graph)
 
 @click.command(help="save graph")
 def save():
-    pass
+    fig, ax = plot()
+    mpld3.save_html(fig, "gräy.html")
 
 
 main.add_command(save)
+
+
+@click.command(help="output as csv (estimate, done)")
+def csv():
+    for state in get_states():
+        est, done = calculate(state)
+        print(est, done)
+
+
+main.add_command(csv)
+
+
+def plot():
+    fig, ax = plt.subplots()
+    states = list(get_states())
+    xs = []
+    ys = []
+    for x, y in [calculate(state) for state in states]:
+        xs.append(x)
+        ys.append(x - y)
+    ax.plot(xs, ys)
+    ax.legend("bla")
+    ax.set_xlabel("estimated effort (hours)")
+    ax.set_ylabel("open effort (hours)")
+    plt.title("gräy")
+    return fig, ax
 
 
 def get_states():
