@@ -8,6 +8,7 @@ import click
 import matplotlib
 import matplotlib.pyplot as plt
 import mpld3
+import numpy as np
 import pytz
 import termtables as tt
 from pyrsistent import PRecord, field, pmap
@@ -248,17 +249,39 @@ def duration_to_hours(duration):
     return (60 * hours + minutes) / 60
 
 
-def plot():
-    fig, ax = plt.subplots()
-    states = list(get_states())
+def plot_effort(ax, calc):
     xs = []
     ys = []
-    for x, y in [calculate(state) for state in states]:
+    for x, y in calc:
         xs.append(x)
         ys.append(x - y)
     ax.plot(xs, ys)
     ax.set_xlabel("estimated effort (hours)")
     ax.set_ylabel("open effort (hours)")
+
+
+def plot_velocity(ax, calc):
+    len_calc = len(calc)
+    part = len_calc // 3
+    start_est = calc[-part][0]
+    start_dur = calc[-part][1]
+    grad_est = (calc[-1][0] - start_est) / part
+    grad_dur = (calc[-1][1] - start_dur) / part
+    xs = np.linspace(start_est, start_est + grad_est * len_calc, len_calc)
+    ys = np.linspace(start_dur, start_dur + grad_dur * len_calc, len_calc)
+    ds = xs - ys
+    zero = np.where(np.diff(np.sign(ds)))[0][0]
+    ax.plot(xs[:zero], ds[:zero])
+    return zero
+
+
+def plot():
+    fig, ax = plt.subplots()
+    states = list(get_states())
+    calc = [calculate(state) for state in states]
+    plot_effort(ax, calc)
+    data_points = plot_velocity(ax, calc)
+    ax.legend(["data", f"trend ({data_points} data-points)"])
     plt.title("Effort proportion")
     return fig, ax
 
