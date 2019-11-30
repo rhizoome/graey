@@ -18,8 +18,9 @@ ipdb = "<1"
 
 [packages]
 gr-y = {editable = true,extras = ["fast"],path = "."}
-matplotlib = "*"
-jinja2 = "*"
+matplotlib = "<4"
+jinja2 = "<3"
+numpy = "<2"
 
 [requires]
 python_version = "3"
