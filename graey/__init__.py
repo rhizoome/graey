@@ -6,10 +6,6 @@ from subprocess import CalledProcessError, check_output
 from uuid import uuid4
 
 import click
-import matplotlib
-import matplotlib.pyplot as plt
-import mpld3
-import numpy as np
 import pytz
 import termtables as tt
 from pyrsistent import PRecord, field, pmap
@@ -18,6 +14,30 @@ try:
     import ujson as json
 except ModuleNotFoundError:
     import json
+
+
+matplotlib = None
+plt = None
+mpld3 = None
+np = None
+
+
+# Lazy loading of numpy and matplotlib improves startup time by a factor of 0.3
+def import_np():
+    global np
+    import numpy as np
+
+
+def import_plt():
+    global matplotlib
+    global plt
+    global mpld3
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import mpld3
+
+    import_np()
+
 
 max_trend = 20
 
@@ -256,6 +276,7 @@ main.add_command(stats)
 
 @click.command(help="display graph")
 def graph():
+    import_plt()
     matplotlib.use("TkAgg")
     fig, ax = plot()
     try:
