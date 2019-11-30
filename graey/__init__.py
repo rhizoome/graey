@@ -207,14 +207,22 @@ def stats():
             tasks_done += 1
     _, start, end, grad = predict(calc)
     pred = end[0] + (end[1] / grad[1] * grad[0])
-    print(f"Actions:                 {last.all}")
-    print(f"Actions (done):          {last.done}")
-    print(f"Actions (open):          {last.open}")
-    print(f"Tasks:                   {tasks}")
-    print(f"Tasks (done):            {tasks_done}")
-    print(f"Tasks (open):            {tasks_open}")
-    print(f"Estimate:             {lastc[0]:8.2f}")
-    print(f"Estimate (predicted): {pred:8.2f}")
+    rem = last.estimate - last.duration
+    rem_corr = lastc[0] - last.duration
+    rem_pred = pred - last.duration
+    print(f"Actions:                   {last.all}")
+    print(f"Actions (done):            {last.done}")
+    print(f"Actions (open):            {last.open}")
+    print(f"Tasks:                     {tasks}")
+    print(f"Tasks (done):              {tasks_done}")
+    print(f"Tasks (open):              {tasks_open}")
+    print(f"Estimate:               {last.estimate:8.2f}h")
+    print(f"Estimate (corrected):   {lastc[0]:8.2f}h")
+    print(f"Estimate (predicted):   {pred:8.2f}h")
+    print(f"Done:                   {last.duration:8.2f}h")
+    print(f"Remaining:              {rem:8.2f}h")
+    print(f"Remaining (corrected):  {rem_corr:8.2f}h")
+    print(f"Remaining (predicted):  {rem_pred:8.2f}h")
 
 
 main.add_command(stats)
