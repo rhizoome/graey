@@ -35,26 +35,7 @@ cmds = {"add": Add, "del": Del, "done": Done, "gry": Gry}
 cmds_inv = invert(cmds)
 
 
-class Task(PRecord):
-    open = field(initial=0)
-    done = field(initial=0)
-    estimate = field(initial=0.0)
-    duration = field(initial=0.0)
-
-
-default_task = Task()
-
-
-class State(PRecord):
-    open = field(initial=0)
-    done = field(initial=0)
-    estimate = field(initial=0.0)
-    duration = field(initial=0.0)
-    graey = field(initial=0)
-    actions = field(initial=pmap())
-    tasks = field(initial=pmap())
-    adur = field(initial=1.0)
-
+class Estimate(PRecord):
     @property
     def all(self):
         return self.done + self.open
@@ -64,6 +45,27 @@ class State(PRecord):
             f"est: {self.estimate:.2f}({self.all}) "
             f"dur: {self.duration:.2f}({self.done})"
         )
+
+
+class Task(Estimate):
+    open = field(initial=0)
+    done = field(initial=0)
+    estimate = field(initial=0.0)
+    duration = field(initial=0.0)
+
+
+default_task = Task()
+
+
+class State(Estimate):
+    open = field(initial=0)
+    done = field(initial=0)
+    estimate = field(initial=0.0)
+    duration = field(initial=0.0)
+    graey = field(initial=0)
+    actions = field(initial=pmap())
+    tasks = field(initial=pmap())
+    adur = field(initial=1.0)
 
 
 @click.group()
@@ -245,11 +247,11 @@ def avg_task_duration(state, factor):
         for task in tasks.values():
             open = task.open
             done = task.done
-            actions = open + done
-            if actions < 4:
-                open += 4 - actions
+            all = task.all
+            if all < 4:
+                open += 4 - all
             assert open + done >= 4
-            duration += open * factor + task.duration
+            duration += open * state.adur * factor + task.duration
         return duration / len(tasks)
     else:
         return state.adur * 4
@@ -260,8 +262,8 @@ def calculate(state):
         factor = (state.duration / state.done) / (state.estimate / state.all)
     else:
         factor = 1
-    # avg_duration = avg_task_duration(state, factor)
-    estimate = state.estimate * factor  # + state.graey * avg_duration
+    avg_duration = avg_task_duration(state, factor)
+    estimate = state.estimate * factor + state.graey * avg_duration
     done = state.duration
     assert estimate >= done
     return estimate, done
