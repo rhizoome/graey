@@ -17,8 +17,6 @@ try:
 except ModuleNotFoundError:
     import json
 
-action_duration = 1.0
-
 
 def invert(dict_):
     ret = {}
@@ -53,6 +51,7 @@ class State(PRecord):
     gräy = field(initial=0)
     actions = field(initial=pmap())
     tasks = field(initial=pmap())
+    adur = field(initial=1.0)
 
 
 @click.group()
@@ -236,19 +235,17 @@ def avg_task_duration(state, factor):
             duration += open * factor + task.duration
         return duration / len(tasks)
     else:
-        return action_duration * 4
+        return state.adur * 4
 
 
 def calculate(state):
     if state.done:
-        factor = state.duration / (state.done * action_duration)
+        factor = state.duration / (state.done * state.adur)
     else:
         factor = 1
     avg_duration = avg_task_duration(state, factor)
     estimate = (
-        state.open * action_duration * factor
-        + state.duration
-        + state.gräy * avg_duration
+        state.open * state.adur * factor + state.duration + state.gräy * avg_duration
     )
     done = state.duration
     assert estimate >= done
