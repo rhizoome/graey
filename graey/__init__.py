@@ -27,15 +27,21 @@ def invert(dict_):
 
 
 Meta = namedtuple("Meta", ("timestamp", "cmd"))
-Add = namedtuple("Add", ("uuid", "task", "action", "duration"))
+Add = namedtuple("Add", ("uuid", "task", "action", "estimate"))
 Del = namedtuple("Del", ("uuid"))
 Done = namedtuple("Done", ("uuid", "duration"))
 Gry = namedtuple("Gry", ("count"))
-cmds = {"add": Add, "del": Del, "done": Done, "gry": Gry}
+Est = namedtuple("Est", ("estimate"))
+cmds = {"add": Add, "del": Del, "done": Done, "gry": Gry, "est": Est}
 cmds_inv = invert(cmds)
 
 
 class Estimate(PRecord):
+    open = field(initial=0)
+    done = field(initial=0)
+    estimate = field(initial=0.0)
+    duration = field(initial=0.0)
+
     @property
     def all(self):
         return self.done + self.open
@@ -48,24 +54,17 @@ class Estimate(PRecord):
 
 
 class Task(Estimate):
-    open = field(initial=0)
-    done = field(initial=0)
-    estimate = field(initial=0.0)
-    duration = field(initial=0.0)
+    pass
 
 
 default_task = Task()
 
 
 class State(Estimate):
-    open = field(initial=0)
-    done = field(initial=0)
-    estimate = field(initial=0.0)
-    duration = field(initial=0.0)
     graey = field(initial=0)
     actions = field(initial=pmap())
     tasks = field(initial=pmap())
-    adur = field(initial=1.0)
+    default_est = field(initial=1.0)
 
 
 @click.group()
@@ -75,10 +74,21 @@ def main():
 
 @click.command(help="add ACTION to TASK")
 @click.argument("TASK")
+@click.option(
+    "--estimate",
+    "-e",
+    type=click.INT,
+    default=None,
+    help="Estimate of the action (HHMM)",
+)
 @click.argument("ACTION", nargs=-1)
-def add(task, action):
+def add(task, estimate, action):
+    if estimate is None:
+        estimate = get_default_est()
+    else:
+        estimate = duration_to_hours(estimate)
     with codecs.open("graey.db", "a+") as f:
-        s = serialize(f, Add(str(uuid4()), task, " ".join(action)))
+        s = serialize(f, Add(str(uuid4()), task, " ".join(action), estimate))
         f.write(f"{s}\n")
 
 
@@ -163,6 +173,18 @@ def gry(count):
 main.add_command(gry)
 
 
+@click.command("est", help="set default ESTIMATE")
+@click.argument("ESTIMATE", nargs=1, type=click.INT)
+def est(estimate):
+    estimate = duration_to_hours(estimate)
+    with codecs.open("graey.db", "a+") as f:
+        s = serialize(f, Est(estimate))
+        f.write(f"{s}\n")
+
+
+main.add_command(est)
+
+
 @click.command(help="display stats")
 def stats():
     pass
@@ -208,6 +230,16 @@ def csv():
 main.add_command(csv)
 
 
+def get_default_est():
+    estimate = 1.0
+    with codecs.open("graey.db", "r") as f:
+        for line in f:
+            meta, cmd = deserialize(line)
+            if meta.cmd == "est":
+                estimate = cmd.estimate
+    return estimate
+
+
 def duration_to_hours(duration):
     hours = duration // 100
     minutes = duration - (hours * 100)
@@ -251,10 +283,10 @@ def avg_task_duration(state, factor):
             if all < 4:
                 open += 4 - all
             assert open + done >= 4
-            duration += open * state.adur * factor + task.duration
+            duration += open * state.default_est * factor + task.duration
         return duration / len(tasks)
     else:
-        return state.adur * 4
+        return state.default_est * 4
 
 
 def calculate(state):
@@ -276,35 +308,37 @@ def update_state(state, line):
     if meta.cmd == "add":
         actions = actions.set(cmd.uuid, cmd)
         task = tasks.get(cmd.task, default_task)
-        task = task.set(open=task.open + 1, estimate=task.estimate + cmd.duration)
+        task = task.set(open=task.open + 1, estimate=task.estimate + cmd.estimate)
         tasks = tasks.set(cmd.task, task)
         return state.set(
             actions=actions,
             tasks=tasks,
             open=state.open + 1,
-            estimate=state.estimate + cmd.duration,
+            estimate=state.estimate + cmd.estimate,
         )
     if meta.cmd == "gry":
         return state.set(graey=cmd.count)
+    if meta.cmd == "est":
+        return state.set(default_est=cmd.estimate)
     key = actions[cmd.uuid].task
     task = tasks[key]
     action = actions.get(cmd.uuid)
     if meta.cmd == "del":
         actions = actions.remove(cmd.uuid)
-        task = task.set(open=task.open - 1, estimate=task.estimate - action.duration)
+        task = task.set(open=task.open - 1, estimate=task.estimate - action.estimate)
         tasks = tasks.set(key, task)
         return state.set(
             actions=actions,
             tasks=tasks,
             open=state.open - 1,
-            estimate=state.estimate - action.duration,
+            estimate=state.estimate - action.estimate,
         )
     if meta.cmd == "done":
         actions = actions.remove(cmd.uuid)
         task = task.set(
             open=task.open - 1,
             done=task.done + 1,
-            estimate=task.estimate + cmd.duration - action.duration,
+            estimate=task.estimate + cmd.duration - action.estimate,
             duration=task.duration + cmd.duration,
         )
         tasks = tasks.set(key, task)
@@ -313,7 +347,7 @@ def update_state(state, line):
             done=state.done + 1,
             actions=actions,
             tasks=tasks,
-            estimate=state.estimate + cmd.duration - action.duration,
+            estimate=state.estimate + cmd.duration - action.estimate,
             duration=state.duration + cmd.duration,
         )
     assert False
