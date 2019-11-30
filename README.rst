@@ -4,6 +4,16 @@ Gräy
 
 My take on agil.
 
+It will calculate/plot how much new work you discover while working on a
+project. For example if you discover the same amount of work (or more) as
+you get done, you will never finish. However if you discoer less work and
+you get done, it will predict the total amount of work, using the gradient
+(velocity) over the last 20 data-points. If there are less than 20 data-points
+it will use the last third of the data-points.
+
+You can also add your own prediction of how much work you will discover. I call
+this gräy tasks.
+
 Terminology
 ===========
 
@@ -13,29 +23,19 @@ Gräy task
            time of known tasks.
 
 Task
-           A task is built from actions. An action is always an hour long. We
-           always assume that a task has at least 4 actions.
+           A task is built from actions. An action is an hour long (by
+           default). We always assume that a task has at least 4 actions.
 
 Actions
            Actions are the things needed to complete a task. The user has to try
-           to come up with actions that take roughly an hour.
+           to come up with actions that take roughly an hour (or another
+           configured duration).
 
 Duration
            The time an action actually took in hours.
 
+Estimate
+           The time estimated for actions, task or the whole project
+
 Factor
            The factor is the sum of durations diveded by the count of actions.
-
-Formulas
-           * factor   = sum(duration) / count(duration)
-
-           * task[x]  = sum(duration[x])
-
-           * estimate = (graey * avg(task) + sum(task)) * factor
-
-           * done     = sum(duration)
-
-TODO
-====
-
-* Add init db function, which can take an action_duration
