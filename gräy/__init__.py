@@ -112,10 +112,7 @@ main.add_command(delete)
 def done(action, duration):
     _, table = get_table()
     cmd = table[action - 1][1]
-    hours = duration // 100
-    minutes = duration - (hours * 100)
-    assert minutes < 60
-    float_hours = (60 * hours + minutes) / 60
+    float_hours = duration_to_hours(duration)
     with codecs.open("gräy.db", "a+") as f:
         s = serialize(f, Done(cmd.uuid, float_hours))
         f.write(f"{s}\n")
@@ -195,6 +192,14 @@ def csv():
 
 
 main.add_command(csv)
+
+
+def duration_to_hours(duration):
+    hours = duration // 100
+    minutes = duration - (hours * 100)
+    if minutes >= 60:
+        raise click.ClickException(minute_error)
+    return (60 * hours + minutes) / 60
 
 
 def plot():
@@ -323,3 +328,9 @@ def deserialize(ser):
     meta = Meta(datetime.fromtimestamp(meta[0], tz=pytz.UTC), meta[1])
     cmd = cmds[meta[1]](*ret[1])
     return meta, cmd
+
+
+minute_error = """A duration has the format HHMM, the minute part must always be lower than 60
+
+Correct: 20, 100, 0120, 120, 230, 0359
+Incorrect: 70, 170, 199"""
