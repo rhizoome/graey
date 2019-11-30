@@ -27,7 +27,7 @@ def invert(dict_):
 
 
 Meta = namedtuple("Meta", ("timestamp", "cmd"))
-Add = namedtuple("Add", ("uuid", "task", "action"))
+Add = namedtuple("Add", ("uuid", "task", "action", "duration"))
 Del = namedtuple("Del", ("uuid"))
 Done = namedtuple("Done", ("uuid", "duration"))
 Set = namedtuple("Set", ("count"))
@@ -38,7 +38,8 @@ cmds_inv = invert(cmds)
 class Task(PRecord):
     open = field(initial=0)
     done = field(initial=0)
-    duration = field(initial=0)
+    estimate = field(initial=0.0)
+    duration = field(initial=0.0)
 
 
 default_task = Task()
@@ -47,11 +48,22 @@ default_task = Task()
 class State(PRecord):
     open = field(initial=0)
     done = field(initial=0)
+    estimate = field(initial=0.0)
     duration = field(initial=0.0)
     gräy = field(initial=0)
     actions = field(initial=pmap())
     tasks = field(initial=pmap())
     adur = field(initial=1.0)
+
+    @property
+    def all(self):
+        return self.done + self.open
+
+    def __repr__(self):
+        return (
+            f"est: {self.estimate:.2f}({self.all}) "
+            f"dur: {self.duration:.2f}({self.done})"
+        )
 
 
 @click.group()
@@ -244,14 +256,13 @@ def avg_task_duration(state, factor):
 
 
 def calculate(state):
-    if state.done:
-        factor = state.duration / (state.done * state.adur)
+    if state.duration and state.done and state.open:
+        factor = (state.duration / state.done) / (state.estimate / state.all)
     else:
         factor = 1
-    avg_duration = avg_task_duration(state, factor)
-    estimate = (
-        state.open * state.adur * factor + state.duration + state.gräy * avg_duration
-    )
+    print(state, factor)
+    # avg_duration = avg_task_duration(state, factor)
+    estimate = state.estimate * factor  # + state.gräy * avg_duration
     done = state.duration
     assert estimate >= done
     return estimate, done
@@ -264,32 +275,46 @@ def update_state(state, line):
     if meta.cmd == "add":
         actions = actions.set(cmd.uuid, cmd)
         task = tasks.get(cmd.task, default_task)
-        task = task.set(open=task.open + 1)
+        task = task.set(open=task.open + 1, estimate=task.estimate + cmd.duration)
         tasks = tasks.set(cmd.task, task)
-        state = state.set(actions=actions, tasks=tasks)
-        return state.set(open=state.open + 1)
+        return state.set(
+            actions=actions,
+            tasks=tasks,
+            open=state.open + 1,
+            estimate=state.estimate + cmd.duration,
+        )
     if meta.cmd == "set":
         return state.set(gräy=cmd.count)
     key = actions[cmd.uuid].task
     task = tasks[key]
+    action = actions.get(cmd.uuid)
     if meta.cmd == "del":
-        tasks = tasks.set(key, task.set(open=task.open - 1))
         actions = actions.remove(cmd.uuid)
-        state = state.set(actions=actions, tasks=tasks)
-        return state.set(open=state.open - 1)
-    if meta.cmd == "done":
-        tasks = tasks.set(
-            key,
-            task.set(
-                open=task.open - 1,
-                done=task.done + 1,
-                duration=task.duration + cmd.duration,
-            ),
+        task = task.set(open=task.open - 1, estimate=task.estimate - action.duration)
+        tasks = tasks.set(key, task)
+        return state.set(
+            actions=actions,
+            tasks=tasks,
+            open=state.open - 1,
+            estimate=state.estimate - action.duration,
         )
+    if meta.cmd == "done":
         actions = actions.remove(cmd.uuid)
-        state = state.set(actions=actions, tasks=tasks)
-        state = state.set(duration=state.duration + cmd.duration)
-        return state.set(open=state.open - 1, done=state.done + 1)
+        task = task.set(
+            open=task.open - 1,
+            done=task.done + 1,
+            estimate=task.estimate + cmd.duration - action.duration,
+            duration=task.duration + cmd.duration,
+        )
+        tasks = tasks.set(key, task)
+        return state.set(
+            open=state.open - 1,
+            done=state.done + 1,
+            actions=actions,
+            tasks=tasks,
+            estimate=state.estimate + cmd.duration - action.duration,
+            duration=state.duration + cmd.duration,
+        )
     assert False
 
 
