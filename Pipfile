@@ -17,7 +17,7 @@ flake8-tuple = "<1"
 ipdb = "<1"
 
 [packages]
-gr-y = {editable = true,extras = ["fast"],path = "."}
+graey = {editable = true,extras = ["fast"],path = "."}
 matplotlib = "<4"
 jinja2 = "<3"
 numpy = "<2"

@@ -50,7 +50,7 @@ class State(PRecord):
     done = field(initial=0)
     estimate = field(initial=0.0)
     duration = field(initial=0.0)
-    gräy = field(initial=0)
+    graey = field(initial=0)
     actions = field(initial=pmap())
     tasks = field(initial=pmap())
     adur = field(initial=1.0)
@@ -75,7 +75,7 @@ def main():
 @click.argument("TASK")
 @click.argument("ACTION", nargs=-1)
 def add(task, action):
-    with codecs.open("gräy.db", "a+") as f:
+    with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Add(str(uuid4()), task, " ".join(action)))
         f.write(f"{s}\n")
 
@@ -110,7 +110,7 @@ main.add_command(show)
 def delete(action):
     _, table = get_table()
     cmd = table[action - 1][1]
-    with codecs.open("gräy.db", "a+") as f:
+    with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Del(cmd.uuid))
         f.write(f"{s}\n")
 
@@ -125,7 +125,7 @@ def done(action, duration):
     _, table = get_table()
     cmd = table[action - 1][1]
     float_hours = duration_to_hours(duration)
-    with codecs.open("gräy.db", "a+") as f:
+    with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Done(cmd.uuid, float_hours))
         f.write(f"{s}\n")
     print(f"Marked action {action} done in {float_hours} hours")
@@ -150,10 +150,10 @@ def tasks():
 main.add_command(tasks)
 
 
-@click.command("gry", help="set gräy COUNT")
+@click.command("gry", help="set graey COUNT")
 @click.argument("COUNT", nargs=1, type=click.INT)
 def gry(count):
-    with codecs.open("gräy.db", "a+") as f:
+    with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Gry(count))
         f.write(f"{s}\n")
 
@@ -190,7 +190,7 @@ main.add_command(graph)
 @click.command(help="save graph")
 def save():
     fig, ax = plot()
-    mpld3.save_html(fig, "gräy.html")
+    mpld3.save_html(fig, "graey.html")
 
 
 main.add_command(save)
@@ -231,7 +231,7 @@ def plot():
 
 def get_states():
     state = State()
-    with codecs.open("gräy.db", "r") as f:
+    with codecs.open("graey.db", "r") as f:
         for line in f:
             line = deserialize(line)
             state = update_state(state, line)
@@ -261,7 +261,7 @@ def calculate(state):
     else:
         factor = 1
     # avg_duration = avg_task_duration(state, factor)
-    estimate = state.estimate * factor  # + state.gräy * avg_duration
+    estimate = state.estimate * factor  # + state.graey * avg_duration
     done = state.duration
     assert estimate >= done
     return estimate, done
@@ -283,7 +283,7 @@ def update_state(state, line):
             estimate=state.estimate + cmd.duration,
         )
     if meta.cmd == "gry":
-        return state.set(gräy=cmd.count)
+        return state.set(graey=cmd.count)
     key = actions[cmd.uuid].task
     task = tasks[key]
     action = actions.get(cmd.uuid)
@@ -320,7 +320,7 @@ def update_state(state, line):
 def get_table():
     state = OrderedDict()
     count = 0
-    with codecs.open("gräy.db", "r") as f:
+    with codecs.open("graey.db", "r") as f:
         for line in f:
             meta, cmd = deserialize(line)
             if meta[1] == "add":

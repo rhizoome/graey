@@ -12,9 +12,9 @@ from shutil import rmtree
 from setuptools import Command, find_packages, setup
 
 # Package meta-data.
-NAME = "gräy"
+NAME = "graey"
 DESCRIPTION = "My take on agil."
-URL = "https://github.com/granwell/gräy"
+URL = "https://github.com/granwell/graey"
 EMAIL = "ganwell@fangorn.ch"
 AUTHOR = "Jean-Louis Fuchs"
 REQUIRES_PYTHON = ">=3.6.0"
@@ -102,7 +102,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     url=URL,
     packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
-    entry_points={"console_scripts": ["gry=gräy:main"]},
+    entry_points={"console_scripts": ["gry=graey:main"]},
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,

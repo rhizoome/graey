@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "450f887c5e33596e9f60307cdfdb801d1da03759774e90358f87b9d3397af675"
+            "sha256": "c7b214fd0830bd58890a0a10eb6af9c611f43dd06b500eb9deec84276f3dd6bd"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -30,7 +30,7 @@
             ],
             "version": "==0.10.0"
         },
-        "gr-y": {
+        "graey": {
             "editable": true,
             "extras": [
                 "fast"

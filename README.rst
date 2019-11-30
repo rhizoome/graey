@@ -31,7 +31,7 @@ Formulas
 
            * task[x]  = sum(duration[x])
 
-           * estimate = (gräy * avg(task) + sum(task)) * factor
+           * estimate = (graey * avg(task) + sum(task)) * factor
 
            * done     = sum(duration)
 
