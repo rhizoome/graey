@@ -128,9 +128,11 @@ def add(task, estimate, action):
         estimate = get_default_est()
     else:
         estimate = duration_to_hours(estimate)
+    action = " ".join(action)
     with codecs.open("graey.db", "a+") as f:
-        s = serialize(f, Add(str(uuid4()), task, " ".join(action), estimate))
+        s = serialize(f, Add(str(uuid4()), task, action, estimate))
         f.write(f"{s}\n")
+    print(f"added action {task} {action} with estimate {estimate:8.2f}h")
 
 
 main.add_command(add)
@@ -161,9 +163,9 @@ def show(task):
     for state in get_states():
         pass
     if state:
-        print(f"  Gräy: {count}   |   Default estimate: {state.default_est}")
+        print(f"  gräy: {count}   |   default estimate: {state.default_est}")
     else:
-        print(f"  Gräy: {count}")
+        print(f"  gräy: {count}")
 
 
 main.add_command(show)
@@ -177,6 +179,7 @@ def delete(action):
     with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Del(cmd.uuid))
         f.write(f"{s}\n")
+    print(f"marked action {action}: {cmd.task} {cmd.action} deleted")
 
 
 main.add_command(delete)
@@ -195,7 +198,9 @@ def done(action, duration):
     with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Done(cmd.uuid, float_hours))
         f.write(f"{s}\n")
-    print(f"Marked action {action} done in {float_hours:8.2f} hours")
+    print(
+        f"marked action {action}: {cmd.task} {cmd.action} done duration: {float_hours:8.2f}h"
+    )
 
 
 main.add_command(done)
@@ -254,6 +259,7 @@ def gry(count):
     with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Gry(count))
         f.write(f"{s}\n")
+    print(f"set gräy count to {count}")
 
 
 main.add_command(gry)
@@ -266,6 +272,7 @@ def est(estimate):
     with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Est(estimate))
         f.write(f"{s}\n")
+    print(f"set estimate to {estimate}")
 
 
 main.add_command(est)
@@ -341,6 +348,7 @@ def save():
     import_plt()
     fig, ax = plot()
     mpld3.save_html(fig, "graey.html")
+    print("saved plot to graey.html")
 
 
 main.add_command(save)
