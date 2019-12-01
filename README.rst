@@ -67,7 +67,7 @@ Work/Effort
 Features
 ========
 
-.. code-block:: bash
+.. code-block:: text
 
    $> gry
    Usage: gry [OPTIONS] COMMAND [ARGS]...
@@ -92,7 +92,7 @@ Features
 Stats
 =====
 
-.. code-block:: bash
+.. code-block:: text
 
    $> gry stats
    actions:                       8
