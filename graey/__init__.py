@@ -391,7 +391,7 @@ main.add_command(plot)
 @click.command(help="save plot")
 def save():
     import_plt()
-    fig, ax = plot()
+    fig, ax = do_plot()
     mpld3.save_html(fig, "graey.html")
     print("saved plot to graey.html")
 
