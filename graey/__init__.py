@@ -297,6 +297,7 @@ main.add_command(graph)
 
 @click.command(help="save graph")
 def save():
+    import_plt()
     fig, ax = plot()
     mpld3.save_html(fig, "graey.html")
 
