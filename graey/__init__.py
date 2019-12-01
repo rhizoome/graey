@@ -298,9 +298,30 @@ def stats():
     y0 = start[0] - start[1]
     x1 = end[0]
     y1 = end[0] - end[1]
+
+    # Because of prolonged disuse my algebra was broken
+
+    # Given: P(x0, y0), P(x1, y1), f(x) = x * m + b
+
+    # y0 = x0 * m + b
+    # y1 = x1 * m + b
+
+    # b = y0 - x0 * m
+    # b = y1 - x1 * m
+
+    # y0 - x0 * m = y1 - x1 * m           | - y0
+    # - (x0 * m) = y1 - y0 - x1 * m       | + (x1 * m)
+    # x1 * m - x0 * m = y1 - y0
+    # m (x1 - x0) = y1 - y0               | / (x1 - x0)
+    # m = (y1 - y0) / (x1 - x0)
+
+    # y0 = x0 * m + b                     | -x0 * m
+    # y0 - x0 * m = b
+    # b = y0 - x0 * m
+    # b = y0 - x0 * ((y1 - y0) / (x1 - x0))
     try:
         m = (y1 - y0) / (x1 - x0)
-        b = ((x0 * y1) - (x1 * y0)) / (x0 - x1)
+        b = y0 - x0 * ((y1 - y0) / (x1 - x0))
         pred = -(b / m)
         rem_pred = pred - last.duration
     except ZeroDivisionError:
