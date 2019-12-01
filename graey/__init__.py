@@ -251,24 +251,26 @@ def stats():
             tasks_open += 1
         else:
             tasks_done += 1
-    _, start, end, grad = predict(calc)
-    pred = end[0] + (end[1] / grad[1] * grad[0])
+    part, start, end, grad = predict(calc)
+    # pred = end[0] + (end[1] / grad[1] * grad[0])
+    pred = 0
     rem = last.estimate - last.duration
     rem_corr = lastc[0] - last.duration
     rem_pred = pred - last.duration
-    print(f"Actions:                    {last.all}")
-    print(f"Actions (done):             {last.done}")
-    print(f"Actions (open):             {last.open}")
-    print(f"Tasks:                      {tasks}")
-    print(f"Tasks (done):               {tasks_done}")
-    print(f"Tasks (open):               {tasks_open}")
-    print(f"Estimate:               {last.estimate:8.2f}h")
-    print(f"Estimate (corrected):   {lastc[0]:8.2f}h")
-    print(f"Estimate (predicted):   {pred:8.2f}h")
-    print(f"Done:                   {last.duration:8.2f}h")
-    print(f"Remaining:              {rem:8.2f}h")
-    print(f"Remaining (corrected):  {rem_corr:8.2f}h")
-    print(f"Remaining (predicted):  {rem_pred:8.2f}h")
+    print(f"Actions:                {last.all:8d}")
+    print(f"Actions (done):         {last.done:8d}")
+    print(f"Actions (open):         {last.open:8d}")
+    print(f"Tasks:                  {tasks:8d}")
+    print(f"Tasks (done):           {tasks_done:8d}")
+    print(f"Tasks (open):           {tasks_open:8d}")
+    print(f"Estimate:                  {last.estimate:8.2f}h")
+    print(f"Estimate (corrected):      {lastc[0]:8.2f}h")
+    print(f"Estimate (predicted):      {pred:8.2f}h")
+    print(f"Prediction data-point:  {part:8d}")
+    print(f"Done:                      {last.duration:8.2f}h")
+    print(f"Remaining:                 {rem:8.2f}h")
+    print(f"Remaining (corrected):     {rem_corr:8.2f}h")
+    print(f"Remaining (predicted):     {rem_pred:8.2f}h")
 
 
 main.add_command(stats)
@@ -338,8 +340,8 @@ def duration_to_hours(duration):
 def predict(calc):
     steps = len(calc)
     part = min(steps // 3, max_trend)
-    if not part:
-        part = steps
+    if part < 4:
+        part = min(steps, 4)
     start = calc[-part]
     end = calc[-1]
     grad = ((end[0] - start[0]) / part, (end[1] - start[1]) / part)
