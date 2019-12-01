@@ -461,7 +461,7 @@ def plot_effort(ax, calc):
     ax.set_ylabel("open effort (hours)")
 
 
-def plot_velocity(ax, calc):
+def plot_prediction(ax, calc):
     part, x0, y0, x1, y1 = prediction(calc)
     if x1 is not None:
         ax.plot((x0, x1), (y0, y1), zorder=1)
@@ -473,7 +473,7 @@ def do_plot():
     calc = [calculate(state) for state in states]
     fig, ax = plt.subplots()
     plot_effort(ax, calc)
-    part = plot_velocity(ax, calc)
+    part = plot_prediction(ax, calc)
     ax.legend(["data", f"trend ({part} data-points)"])
     lim = [ax.get_xlim(), ax.get_ylim()]
     # Transpose list
