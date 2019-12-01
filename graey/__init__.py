@@ -293,12 +293,21 @@ def stats():
             tasks_open += 1
         else:
             tasks_done += 1
-    part, start, end, grad = predict(calc)
-    # pred = end[0] + (end[1] / grad[1] * grad[0])
-    pred = 0
+    part, start, end, grad = prediction_points(calc)
+    x0 = start[0]
+    y0 = start[0] - start[1]
+    x1 = end[0]
+    y1 = end[0] - end[1]
+    try:
+        m = (y1 - y0) / (x1 - x0)
+        b = ((x0 * y1) - (x1 * y0)) / (x0 - x1)
+        pred = -(b / m)
+        rem_pred = pred - last.duration
+    except ZeroDivisionError:
+        pred = None
+        rem_pred = None
     rem = last.projection - last.duration
     rem_corr = lastc[0] - last.duration
-    rem_pred = pred - last.duration
     factor = calc_factor(last)
     avg_projection = avg_task_projection(last, factor)
     print(f"actions:                {last.all:8d}")
@@ -311,14 +320,20 @@ def stats():
     print(f"prediction data-points: {part:8d}")
     print(f"projection:                {last.projection:8.2f}h")
     print(f"projection (corrected):    {lastc[0]:8.2f}h")
-    print(f"projection (predicted):    {pred:8.2f}h")
-    print(f"tasks (avg. projection:    {avg_projection:8.2f}h")
+    if pred:
+        print(f"projection (predicted):    {pred:8.2f}h")
+    else:
+        print(f"projection (predicted):     (undef)h")
+    print(f"tasks (avg. projection):   {avg_projection:8.2f}h")
     print(f"estimate:                  {last.estimate:8.2f}h")
     print(f"correction factor:         {factor:8.2f}h")
     print(f"done:                      {last.duration:8.2f}h")
     print(f"remaining:                 {rem:8.2f}h")
     print(f"remaining (corrected):     {rem_corr:8.2f}h")
-    print(f"remaining (predicted):     {rem_pred:8.2f}h")
+    if rem_pred:
+        print(f"remaining (predicted):     {rem_pred:8.2f}h")
+    else:
+        print(f"remaining (predicted):      (undef)h")
 
 
 main.add_command(stats)
@@ -328,7 +343,7 @@ main.add_command(stats)
 def plot():
     import_plt()
     matplotlib.use("TkAgg")
-    fig, ax = plot()
+    fig, ax = do_plot()
     try:
         out = check_output(["xrdb", "-query"])
         for line in out.decode("UTF-8").splitlines():
@@ -397,7 +412,7 @@ def duration_to_hours(duration):
     return (60 * hours + minutes) / 60
 
 
-def predict(calc):
+def prediction_points(calc):
     steps = len(calc)
     part = min(steps // 3, max_trend)
     if part < 4:
@@ -420,7 +435,7 @@ def plot_effort(ax, calc):
 
 
 def plot_velocity(ax, calc):
-    part, start, end, grad = predict(calc)
+    part, start, end, grad = prediction_points(calc)
     trend = max(part, 20)
     xs = np.linspace(start[0], start[0] + grad[0] * trend, trend)
     ys = np.linspace(start[1], start[1] + grad[1] * trend, trend)
@@ -433,7 +448,7 @@ def plot_velocity(ax, calc):
     return part
 
 
-def plot():
+def do_plot():
     states = list(get_states())
     calc = [calculate(state) for state in states]
     fig, ax = plt.subplots()
