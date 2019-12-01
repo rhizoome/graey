@@ -64,14 +64,30 @@ Velocity
 Work/Effort
            The sum of time assosiated with the actions.
 
-TODO
-====
+Features
+========
 
-* I guess the fixed count of 20 prediction data-points is a problem for a very
-  large project. I'm not sure if an option to plot and stats, is enough to fix
-  the problem.
+.. code-block:: bash
 
-* merge
+   $> gry
+   Usage: gry [OPTIONS] COMMAND [ARGS]...
+   
+   Options:
+     --help  Show this message and exit.
+   
+   Commands:
+     add    add ACTION to TASK
+     csv    output as csv (projection, done)
+     del    delete an ACTION by id (see show)
+     done   complete an ACTION by id (DURATION in HHMM)
+     est    set default ESTIMATE
+     gry    set graey COUNT
+     merge  fix database after automatic or manual merge
+     plot   display plot
+     save   save plot
+     show   show open tasks
+     stats  display stats
+     tasks  show known tasks
 
 Stats
 =====
@@ -98,3 +114,12 @@ Stats
    remaining:                     0.00h
    remaining (corrected):         0.00h
    remaining (predicted):         0.00h
+
+TODO
+====
+
+* I guess the fixed count of 20 prediction data-points is a problem for a very
+  large project. I'm not sure if an option to plot and stats, is enough to fix
+  the problem.
+
+* merge
