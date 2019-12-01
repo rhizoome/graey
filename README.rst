@@ -17,6 +17,10 @@ this gräy tasks.
 Gräy can only work if you update gräy as you complete actions or you discover
 new actions.
 
+.. raw:: html
+
+    <img alt="plot" src="https://1042.ch/42/ganwell/graey.png" width="70%">
+
 Terminology
 ===========
 
