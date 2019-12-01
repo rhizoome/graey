@@ -455,6 +455,8 @@ def prediction(calc):
     # b = y0 - x0 * m
     # b = y0 - x0 * ((y1 - y0) / (x1 - x0))
     try:
+        if x0 == x1 and y0 != y1:
+            return part, x0, y0, x1, 0
         m = (y1 - y0) / (x1 - x0)
         b = y0 - x0 * ((y1 - y0) / (x1 - x0))
         return part, x0, y0, -(b / m), 0
