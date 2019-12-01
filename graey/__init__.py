@@ -362,7 +362,7 @@ def plot(limit):
 main.add_command(plot)
 
 
-@click.command(help="save plot")
+@click.command(help="save plot as html")
 @click.option(
     "--limit", "-l", type=click.INT, default=None, help="limit",
 )

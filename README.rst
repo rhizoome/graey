@@ -84,7 +84,7 @@ Features
      gry    set graey COUNT
      merge  fix database after automatic or manual merge
      plot   display plot
-     save   save plot
+     save   save plot as html
      show   show open tasks
      stats  display stats
      tasks  show known tasks
