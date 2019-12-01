@@ -301,40 +301,7 @@ def stats():
             tasks_open += 1
         else:
             tasks_done += 1
-    part, start, end, grad = prediction_points(calc)
-    x0 = start[0]
-    y0 = start[0] - start[1]
-    x1 = end[0]
-    y1 = end[0] - end[1]
-
-    # Because of prolonged disuse my algebra was broken
-
-    # Given: P(x0, y0), P(x1, y1), f(x) = x * m + b
-
-    # y0 = x0 * m + b
-    # y1 = x1 * m + b
-
-    # b = y0 - x0 * m
-    # b = y1 - x1 * m
-
-    # y0 - x0 * m = y1 - x1 * m           | - y0
-    # - (x0 * m) = y1 - y0 - x1 * m       | + (x1 * m)
-    # x1 * m - x0 * m = y1 - y0
-    # m (x1 - x0) = y1 - y0               | / (x1 - x0)
-    # m = (y1 - y0) / (x1 - x0)
-
-    # y0 = x0 * m + b                     | - (x0 * m)
-    # y0 - x0 * m = b
-    # b = y0 - x0 * m
-    # b = y0 - x0 * ((y1 - y0) / (x1 - x0))
-    try:
-        m = (y1 - y0) / (x1 - x0)
-        b = y0 - x0 * ((y1 - y0) / (x1 - x0))
-        pred = -(b / m)
-        rem_pred = pred - last.duration
-    except ZeroDivisionError:
-        pred = None
-        rem_pred = None
+    part, _, _, pred, _ = prediction(calc)
     rem = last.projection - last.duration
     rem_corr = lastc[0] - last.duration
     factor = calc_factor(last)
@@ -360,9 +327,10 @@ def stats():
     print(f"done:                      {last.duration:8.2f}h")
     print(f"remaining:                 {rem:8.2f}h")
     print(f"remaining (corrected):     {rem_corr:8.2f}h")
-    if rem_pred is None:
+    if pred is None:
         print(f"remaining (predicted):      (undef)h")
     else:
+        rem_pred = pred - last.duration
         print(f"remaining (predicted):     {rem_pred:8.2f}h")
 
 
@@ -442,15 +410,44 @@ def duration_to_hours(duration):
     return (60 * hours + minutes) / 60
 
 
-def prediction_points(calc):
+def prediction(calc):
     steps = len(calc)
     part = min(steps // 3, max_trend)
     if part < 4:
         part = min(steps, 4)
     start = calc[-part]
     end = calc[-1]
-    grad = ((end[0] - start[0]) / part, (end[1] - start[1]) / part)
-    return (part, start, end, grad)
+    x0 = start[0]
+    y0 = start[0] - start[1]
+    x1 = end[0]
+    y1 = end[0] - end[1]
+
+    # Because of prolonged disuse my algebra was broken
+
+    # Given: P(x0, y0), P(x1, y1), f(x) = x * m + b
+
+    # y0 = x0 * m + b
+    # y1 = x1 * m + b
+
+    # b = y0 - x0 * m
+    # b = y1 - x1 * m
+
+    # y0 - x0 * m = y1 - x1 * m           | - y0
+    # - (x0 * m) = y1 - y0 - x1 * m       | + (x1 * m)
+    # x1 * m - x0 * m = y1 - y0
+    # m (x1 - x0) = y1 - y0               | / (x1 - x0)
+    # m = (y1 - y0) / (x1 - x0)
+
+    # y0 = x0 * m + b                     | - (x0 * m)
+    # y0 - x0 * m = b
+    # b = y0 - x0 * m
+    # b = y0 - x0 * ((y1 - y0) / (x1 - x0))
+    try:
+        m = (y1 - y0) / (x1 - x0)
+        b = y0 - x0 * ((y1 - y0) / (x1 - x0))
+        return part, x0, y0, -(b / m), 0
+    except ZeroDivisionError:
+        return part, None, None, None, None
 
 
 def plot_effort(ax, calc):
@@ -465,16 +462,9 @@ def plot_effort(ax, calc):
 
 
 def plot_velocity(ax, calc):
-    part, start, end, grad = prediction_points(calc)
-    trend = max(part, 20)
-    xs = np.linspace(start[0], start[0] + grad[0] * trend, trend)
-    ys = np.linspace(start[1], start[1] + grad[1] * trend, trend)
-    ds = xs - ys
-    try:
-        zero = np.where(np.diff(np.sign(ds)))[0][0] + 2
-    except IndexError:
-        zero = trend
-    ax.plot(xs[:zero], ds[:zero], zorder=1)
+    part, x0, y0, x1, y1 = prediction(calc)
+    if x1 is not None:
+        ax.plot((x0, x1), (y0, y1), zorder=1)
     return part
 
 
