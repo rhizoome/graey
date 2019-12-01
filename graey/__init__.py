@@ -1,4 +1,5 @@
 import codecs
+import math
 import os
 from collections import OrderedDict, namedtuple
 from datetime import datetime
@@ -73,7 +74,8 @@ class Estimate(PRecord):
 
     def __repr__(self):
         return (
-            f"proj: {self.projection:.2f}({self.all}) "
+            f"est: {self.estimate:.2f}({self.all}) "
+            f"proj: {self.projection:.2f} "
             f"dur: {self.duration:.2f}({self.done})"
         )
 
@@ -159,13 +161,15 @@ def show(task):
                 alignment="r",
             )
         )
-    state = None
-    for state in get_states():
-        pass
-    if state:
-        print(f"  gräy: {count}   |   default estimate: {state.default_est}")
+        state = None
+        for state in get_states():
+            pass
+        if state:
+            print(f"  gräy: {count}   |   default estimate: {state.default_est}")
+        else:
+            print(f"  gräy: {count}")
     else:
-        print(f"  gräy: {count}")
+        print("There are no open actions")
 
 
 main.add_command(show)
@@ -247,7 +251,11 @@ def tasks():
         )
     )
     factor = calc_factor(state)
-    print(f"average projection: {avg_task_projection(state, factor):8.2f}h")
+    avg_actions, avg_projection = avg_task_projection(state, factor)
+    print(
+        f"average projection: {avg_projection:8.2f}h    |"
+        f"    average actions: {avg_actions:8.2f}"
+    )
 
 
 main.add_command(tasks)
@@ -330,7 +338,7 @@ def stats():
     rem = last.projection - last.duration
     rem_corr = lastc[0] - last.duration
     factor = calc_factor(last)
-    avg_projection = avg_task_projection(last, factor)
+    avg_actions, avg_projection = avg_task_projection(last, factor)
     print(f"actions:                {last.all:8d}")
     print(f"actions (done):         {last.done:8d}")
     print(f"actions (open):         {last.open:8d}")
@@ -338,6 +346,7 @@ def stats():
     print(f"tasks (done):           {tasks_done:8d}")
     print(f"tasks (open):           {tasks_open:8d}")
     print(f"tasks (gräy):           {last.graey:8d}")
+    print(f"tasks (avg. actions):      {avg_actions:8.2f}")
     print(f"prediction data-points: {part:8d}")
     print(f"projection:                {last.projection:8.2f}h")
     print(f"projection (corrected):    {lastc[0]:8.2f}h")
@@ -504,20 +513,23 @@ def avg_task_projection(state, factor):
     tasks = state.tasks
     if tasks:
         projection = 0
+        avg_actions = sum([x.all for x in tasks.values()]) / len(tasks)
+        fill_actions = math.ceil(avg_actions)
+        # fill_actions = max(4, avg_actions)  # No sure if I want this
         for task in tasks.values():
             all = task.all
             unknown = 0
-            if all < 4 and task.open:
-                unknown = 4 - all
+            if all < fill_actions and task.open:
+                unknown = max(0, fill_actions - all)
             projection += (
                 unknown * state.default_est * factor
                 + (task.projection - task.duration) * factor
                 + task.duration
             )
 
-        return projection / len(tasks)
+        return avg_actions, projection / len(tasks)
     else:
-        return state.default_est * 4
+        return 4, state.default_est * 4
 
 
 def calc_factor(state):
@@ -533,7 +545,7 @@ def correct(item, factor):
 
 def calculate(state):
     factor = calc_factor(state)
-    avg_projection = avg_task_projection(state, factor)
+    _, avg_projection = avg_task_projection(state, factor)
     proj = correct(state, factor) + state.graey * avg_projection
     done = state.duration
     assert proj >= done
@@ -547,7 +559,11 @@ def update_state(state, line):
     if meta.cmd == "add":
         actions = actions.set(cmd.uuid, cmd)
         task = tasks.get(cmd.task, default_task)
-        task = task.set(open=task.open + 1, projection=task.projection + cmd.estimate)
+        task = task.set(
+            open=task.open + 1,
+            projection=task.projection + cmd.estimate,
+            estimate=task.estimate + cmd.estimate,
+        )
         tasks = tasks.set(cmd.task, task)
         return state.set(
             actions=actions,
@@ -565,7 +581,9 @@ def update_state(state, line):
     if meta.cmd == "del":
         actions = actions.remove(cmd.uuid)
         task = task.set(
-            open=task.open - 1, projection=task.projection - action.estimate
+            open=task.open - 1,
+            projection=task.projection - action.estimate,
+            estimate=task.estimate - action.estimate,
         )
         tasks = tasks.set(key, task)
         return state.set(

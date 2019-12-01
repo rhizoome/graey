@@ -24,7 +24,7 @@ Gräy task
 
 Task
            A task is built from actions. An action is an hour long (by
-           default). We always assume that a task has at least 4 actions.
+           default).
 
 Actions
            Actions are the things needed to complete a task. The user has to try
