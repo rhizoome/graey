@@ -401,7 +401,7 @@ def avg_task_estimate(state, factor):
         for task in tasks.values():
             all = task.all
             unknown = 0
-            if all < 4:
+            if all < 4 and task.open:
                 unknown = 4 - all
             estimate += (
                 unknown * state.default_est * factor
