@@ -226,7 +226,7 @@ def tasks():
         )
     )
     factor = calc_factor(state)
-    print(f"average projection: {avg_task_projection(state, factor):8.2f}")
+    print(f"average projection: {avg_task_projection(state, factor):8.2f}h")
 
 
 main.add_command(tasks)
@@ -277,16 +277,19 @@ def stats():
     rem_corr = lastc[0] - last.duration
     rem_pred = pred - last.duration
     factor = calc_factor(last)
+    avg_projection = avg_task_projection(last, factor)
     print(f"actions:                {last.all:8d}")
     print(f"actions (done):         {last.done:8d}")
     print(f"actions (open):         {last.open:8d}")
     print(f"tasks:                  {tasks:8d}")
     print(f"tasks (done):           {tasks_done:8d}")
     print(f"tasks (open):           {tasks_open:8d}")
+    print(f"tasks (gräy):           {last.graey:8d}")
     print(f"prediction data-points: {part:8d}")
     print(f"projection:                {last.projection:8.2f}h")
     print(f"projection (corrected):    {lastc[0]:8.2f}h")
     print(f"projection (predicted):    {pred:8.2f}h")
+    print(f"tasks (avg. projection:    {avg_projection:8.2f}h")
     print(f"estimate:                  {last.estimate:8.2f}h")
     print(f"correction factor:         {factor:8.2f}h")
     print(f"done:                      {last.duration:8.2f}h")
