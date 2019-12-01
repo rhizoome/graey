@@ -64,6 +64,7 @@ class Estimate(PRecord):
     open = field(initial=0)
     done = field(initial=0)
     estimate = field(initial=0.0)
+    gotthard = field(initial=0.0)
     duration = field(initial=0.0)
 
     @property
@@ -267,15 +268,16 @@ def stats():
     print(f"Tasks:                  {tasks:8d}")
     print(f"Tasks (done):           {tasks_done:8d}")
     print(f"Tasks (open):           {tasks_open:8d}")
+    print(f"Prediction data-point:  {part:8d}")
     print(f"Estimate:                  {last.estimate:8.2f}h")
     print(f"Estimate (corrected):      {lastc[0]:8.2f}h")
     print(f"Estimate (predicted):      {pred:8.2f}h")
-    print(f"Prediction data-point:  {part:8d}")
+    print(f"User estimate:             {last.gotthard:8.2f}h")
+    print(f"Correction factor:         {factor:8.2f}h")
     print(f"Done:                      {last.duration:8.2f}h")
     print(f"Remaining:                 {rem:8.2f}h")
     print(f"Remaining (corrected):     {rem_corr:8.2f}h")
     print(f"Remaining (predicted):     {rem_pred:8.2f}h")
-    print(f"Correction factor:         {factor:8.2f}h")
 
 
 main.add_command(stats)
@@ -423,8 +425,8 @@ def avg_task_estimate(state, factor):
 
 
 def calc_factor(state):
-    if state.duration and state.done and state.open:
-        return (state.duration / state.done) / (state.estimate / state.all)
+    if state.duration and state.gotthard:
+        return state.duration / state.gotthard
     else:
         return 1
 
@@ -432,7 +434,11 @@ def calc_factor(state):
 def calculate(state):
     factor = calc_factor(state)
     avg_estimate = avg_task_estimate(state, factor)
-    estimate = state.estimate * factor + state.graey * avg_estimate
+    estimate = (
+        (state.estimate - state.duration) * factor
+        + state.duration
+        + state.graey * avg_estimate
+    )
     done = state.duration
     assert estimate >= done
     return estimate, done
@@ -485,6 +491,7 @@ def update_state(state, line):
             actions=actions,
             tasks=tasks,
             estimate=state.estimate + cmd.duration - action.estimate,
+            gotthard=state.gotthard + action.estimate,
             duration=state.duration + cmd.duration,
         )
     assert False
