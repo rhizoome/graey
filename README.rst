@@ -89,6 +89,13 @@ Features
      stats  display stats
      tasks  show known tasks
 
+html
+----
+
+Example_
+
+.. _Example: http://1042.ch/42/ganwell/graey.html
+
 Tasks
 -----
 
