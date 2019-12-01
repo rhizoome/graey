@@ -315,7 +315,7 @@ def stats():
     # m (x1 - x0) = y1 - y0               | / (x1 - x0)
     # m = (y1 - y0) / (x1 - x0)
 
-    # y0 = x0 * m + b                     | -x0 * m
+    # y0 = x0 * m + b                     | - (x0 * m)
     # y0 - x0 * m = b
     # b = y0 - x0 * m
     # b = y0 - x0 * ((y1 - y0) / (x1 - x0))
