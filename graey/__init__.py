@@ -162,12 +162,15 @@ main.add_command(delete)
 @click.argument("DURATION", nargs=1, type=click.INT)
 def done(action, duration):
     _, table = get_table()
-    cmd = table[action - 1][1]
+    try:
+        cmd = table[action - 1][1]
+    except IndexError:
+        raise click.ClickException(f"There is no task {action}")
     float_hours = duration_to_hours(duration)
     with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Done(cmd.uuid, float_hours))
         f.write(f"{s}\n")
-    print(f"Marked action {action} done in {float_hours} hours")
+    print(f"Marked action {action} done in {float_hours:8.2f} hours")
 
 
 main.add_command(done)
@@ -257,6 +260,7 @@ def stats():
     rem = last.estimate - last.duration
     rem_corr = lastc[0] - last.duration
     rem_pred = pred - last.duration
+    factor = calc_factor(last)
     print(f"Actions:                {last.all:8d}")
     print(f"Actions (done):         {last.done:8d}")
     print(f"Actions (open):         {last.open:8d}")
@@ -271,6 +275,7 @@ def stats():
     print(f"Remaining:                 {rem:8.2f}h")
     print(f"Remaining (corrected):     {rem_corr:8.2f}h")
     print(f"Remaining (predicted):     {rem_pred:8.2f}h")
+    print(f"Correction factor:         {factor:8.2f}h")
 
 
 main.add_command(stats)
