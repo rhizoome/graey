@@ -476,6 +476,14 @@ def do_plot():
     plot_effort(ax, calc)
     part = plot_velocity(ax, calc)
     ax.legend(["data", f"trend ({part} data-points)"])
+    lim = [ax.get_xlim(), ax.get_ylim()]
+    # Transpose list
+    lim = list(map(list, zip(*lim)))
+    lim[0] = min(*lim[0])
+    lim[1] = max(*lim[1])
+    ax.set_xlim(lim)
+    ax.set_ylim(lim)
+    ax.set_aspect("equal")
     plt.title("Effort proportion")
     return fig, ax
 
