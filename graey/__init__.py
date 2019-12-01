@@ -63,8 +63,8 @@ cmds_inv = invert(cmds)
 class Estimate(PRecord):
     open = field(initial=0)
     done = field(initial=0)
+    projection = field(initial=0.0)
     estimate = field(initial=0.0)
-    gotthard = field(initial=0.0)
     duration = field(initial=0.0)
 
     @property
@@ -73,7 +73,7 @@ class Estimate(PRecord):
 
     def __repr__(self):
         return (
-            f"est: {self.estimate:.2f}({self.all}) "
+            f"proj: {self.projection:.2f}({self.all}) "
             f"dur: {self.duration:.2f}({self.done})"
         )
 
@@ -128,18 +128,26 @@ def show(task):
         filter = task[0]
     count, table = get_table()
     table = [
-        (n, c.task, c.action) for n, c in table if filter is None or c.task == filter
+        (n, c.task, c.action, c.estimate)
+        for n, c in table
+        if filter is None or c.task == filter
     ]
     if table:
         print(
             tt.to_string(
                 table,
-                header=["id", "task", "action"],
+                header=["id", "task", "action", "estimate"],
                 style=tt.styles.booktabs,
                 alignment="r",
             )
         )
-    print(f"  Gräy: {count}")
+    state = None
+    for state in get_states():
+        pass
+    if state:
+        print(f"  Gräy: {count}   |   Default estimate: {state.default_est}")
+    else:
+        print(f"  Gräy: {count}")
 
 
 main.add_command(show)
@@ -191,10 +199,16 @@ def tasks():
     factor = calc_factor(state)
     for idx in tasks.keys():
         task = tasks[idx]
-        est = task.estimate
-        rem = est - task.duration
+        proj = correct(task, factor)
         table.append(
-            (idx, fmt(task.estimate), fmt(rem), fmt(est * factor), fmt(rem * factor))
+            (
+                idx,
+                fmt(task.projection),
+                fmt(proj),
+                fmt(task.projection - task.duration),
+                fmt(proj - task.duration),
+                fmt(task.estimate),
+            )
         )
     print(
         tt.to_string(
@@ -202,16 +216,17 @@ def tasks():
             alignment="r",
             header=[
                 "task",
-                "estimate",
+                "projection",
+                "projection (corr)",
                 "remaining",
-                "estimate (corr)",
                 "remaining (corr)",
+                "estimate",
             ],
             style=tt.styles.booktabs,
         )
     )
     factor = calc_factor(state)
-    print(f"Average estimate: {avg_task_estimate(state, factor)}")
+    print(f"average projection: {avg_task_projection(state, factor)}")
 
 
 main.add_command(tasks)
@@ -258,26 +273,26 @@ def stats():
     part, start, end, grad = predict(calc)
     # pred = end[0] + (end[1] / grad[1] * grad[0])
     pred = 0
-    rem = last.estimate - last.duration
+    rem = last.projection - last.duration
     rem_corr = lastc[0] - last.duration
     rem_pred = pred - last.duration
     factor = calc_factor(last)
-    print(f"Actions:                {last.all:8d}")
-    print(f"Actions (done):         {last.done:8d}")
-    print(f"Actions (open):         {last.open:8d}")
-    print(f"Tasks:                  {tasks:8d}")
-    print(f"Tasks (done):           {tasks_done:8d}")
-    print(f"Tasks (open):           {tasks_open:8d}")
-    print(f"Prediction data-point:  {part:8d}")
-    print(f"Estimate:                  {last.estimate:8.2f}h")
-    print(f"Estimate (corrected):      {lastc[0]:8.2f}h")
-    print(f"Estimate (predicted):      {pred:8.2f}h")
-    print(f"User estimate:             {last.gotthard:8.2f}h")
-    print(f"Correction factor:         {factor:8.2f}h")
-    print(f"Done:                      {last.duration:8.2f}h")
-    print(f"Remaining:                 {rem:8.2f}h")
-    print(f"Remaining (corrected):     {rem_corr:8.2f}h")
-    print(f"Remaining (predicted):     {rem_pred:8.2f}h")
+    print(f"actions:                {last.all:8d}")
+    print(f"actions (done):         {last.done:8d}")
+    print(f"actions (open):         {last.open:8d}")
+    print(f"tasks:                  {tasks:8d}")
+    print(f"tasks (done):           {tasks_done:8d}")
+    print(f"tasks (open):           {tasks_open:8d}")
+    print(f"prediction data-points: {part:8d}")
+    print(f"projection:                {last.projection:8.2f}h")
+    print(f"projection (corrected):    {lastc[0]:8.2f}h")
+    print(f"projection (predicted):    {pred:8.2f}h")
+    print(f"estimate:                  {last.estimate:8.2f}h")
+    print(f"correction factor:         {factor:8.2f}h")
+    print(f"done:                      {last.duration:8.2f}h")
+    print(f"remaining:                 {rem:8.2f}h")
+    print(f"remaining (corrected):     {rem_corr:8.2f}h")
+    print(f"remaining (predicted):     {rem_pred:8.2f}h")
 
 
 main.add_command(stats)
@@ -312,11 +327,11 @@ def save():
 main.add_command(save)
 
 
-@click.command(help="output as csv (estimate, done)")
+@click.command(help="output as csv (projection, done)")
 def csv():
     for state in get_states():
-        est, done = calculate(state)
-        print(est, done)
+        prj, done = calculate(state)
+        print(prj, done)
 
 
 main.add_command(csv)
@@ -327,14 +342,14 @@ def fmt(value):
 
 
 def get_default_est():
-    estimate = 1.0
+    projection = 1.0
     if os.path.exists("graey.db"):
         with codecs.open("graey.db", "r") as f:
             for line in f:
                 meta, cmd = deserialize(line)
                 if meta.cmd == "est":
-                    estimate = cmd.estimate
-    return estimate
+                    projection = cmd.estimate
+    return projection
 
 
 def duration_to_hours(duration):
@@ -363,7 +378,7 @@ def plot_effort(ax, calc):
         xs.append(x)
         ys.append(x - y)
     ax.plot(xs, ys, zorder=10)
-    ax.set_xlabel("estimated effort (hours)")
+    ax.set_xlabel("projected effort (hours)")
     ax.set_ylabel("open effort (hours)")
 
 
@@ -404,44 +419,44 @@ def get_states():
         nodb()
 
 
-def avg_task_estimate(state, factor):
+def avg_task_projection(state, factor):
     tasks = state.tasks
     if tasks:
-        estimate = 0
+        projection = 0
         for task in tasks.values():
             all = task.all
             unknown = 0
             if all < 4 and task.open:
                 unknown = 4 - all
-            estimate += (
+            projection += (
                 unknown * state.default_est * factor
-                + (task.estimate - task.duration) * factor
+                + (task.projection - task.duration) * factor
                 + task.duration
             )
 
-        return estimate / len(tasks)
+        return projection / len(tasks)
     else:
         return state.default_est * 4
 
 
 def calc_factor(state):
-    if state.duration and state.gotthard:
-        return state.duration / state.gotthard
+    if state.duration and state.estimate:
+        return state.duration / state.estimate
     else:
         return 1
 
 
+def correct(item, factor):
+    return (item.projection - item.duration) * factor + item.duration
+
+
 def calculate(state):
     factor = calc_factor(state)
-    avg_estimate = avg_task_estimate(state, factor)
-    estimate = (
-        (state.estimate - state.duration) * factor
-        + state.duration
-        + state.graey * avg_estimate
-    )
+    avg_projection = avg_task_projection(state, factor)
+    proj = correct(state, factor) + state.graey * avg_projection
     done = state.duration
-    assert estimate >= done
-    return estimate, done
+    assert proj >= done
+    return proj, done
 
 
 def update_state(state, line):
@@ -451,13 +466,13 @@ def update_state(state, line):
     if meta.cmd == "add":
         actions = actions.set(cmd.uuid, cmd)
         task = tasks.get(cmd.task, default_task)
-        task = task.set(open=task.open + 1, estimate=task.estimate + cmd.estimate)
+        task = task.set(open=task.open + 1, projection=task.projection + cmd.estimate)
         tasks = tasks.set(cmd.task, task)
         return state.set(
             actions=actions,
             tasks=tasks,
             open=state.open + 1,
-            estimate=state.estimate + cmd.estimate,
+            projection=state.projection + cmd.estimate,
         )
     if meta.cmd == "gry":
         return state.set(graey=cmd.count)
@@ -468,20 +483,23 @@ def update_state(state, line):
     action = actions.get(cmd.uuid)
     if meta.cmd == "del":
         actions = actions.remove(cmd.uuid)
-        task = task.set(open=task.open - 1, estimate=task.estimate - action.estimate)
+        task = task.set(
+            open=task.open - 1, projection=task.projection - action.estimate
+        )
         tasks = tasks.set(key, task)
         return state.set(
             actions=actions,
             tasks=tasks,
             open=state.open - 1,
-            estimate=state.estimate - action.estimate,
+            projection=state.projection - action.estimate,
         )
     if meta.cmd == "done":
         actions = actions.remove(cmd.uuid)
         task = task.set(
             open=task.open - 1,
             done=task.done + 1,
-            estimate=task.estimate + cmd.duration - action.estimate,
+            projection=task.projection + cmd.duration - action.estimate,
+            estimate=state.estimate + action.estimate,
             duration=task.duration + cmd.duration,
         )
         tasks = tasks.set(key, task)
@@ -490,8 +508,8 @@ def update_state(state, line):
             done=state.done + 1,
             actions=actions,
             tasks=tasks,
-            estimate=state.estimate + cmd.duration - action.estimate,
-            gotthard=state.gotthard + action.estimate,
+            projection=state.projection + cmd.duration - action.estimate,
+            estimate=state.estimate + action.estimate,
             duration=state.duration + cmd.duration,
         )
     assert False
