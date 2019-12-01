@@ -287,8 +287,11 @@ main.add_command(est)
 
 
 @click.command(help="display stats")
-def stats():
-    states = list(get_states())
+@click.option(
+    "--limit", "-l", type=click.INT, default=None, help="limit",
+)
+def stats(limit):
+    states = list(get_states(limit))
     calc = [calculate(state) for state in states]
     last = states[-1]
     lastc = calc[-1]
@@ -338,10 +341,13 @@ main.add_command(stats)
 
 
 @click.command(help="display plot")
-def plot():
+@click.option(
+    "--limit", "-l", type=click.INT, default=None, help="limit",
+)
+def plot(limit):
     import_plt()
     matplotlib.use("TkAgg")
-    fig, ax = do_plot()
+    fig, ax = do_plot(limit)
     try:
         out = check_output(["xrdb", "-query"])
         for line in out.decode("UTF-8").splitlines():
@@ -357,9 +363,12 @@ main.add_command(plot)
 
 
 @click.command(help="save plot")
-def save():
+@click.option(
+    "--limit", "-l", type=click.INT, default=None, help="limit",
+)
+def save(limit):
     import_plt()
-    fig, ax = do_plot()
+    fig, ax = do_plot(limit)
     mpld3.save_html(fig, "graey.html")
     print("saved plot to graey.html")
 
@@ -368,8 +377,11 @@ main.add_command(save)
 
 
 @click.command(help="output as csv (projection, done)")
-def csv():
-    for state in get_states():
+@click.option(
+    "--limit", "-l", type=click.INT, default=None, help="limit",
+)
+def csv(limit):
+    for state in get_states(limit):
         prj, done = calculate(state)
         print(prj, done)
 
@@ -468,8 +480,8 @@ def plot_prediction(ax, calc):
     return part
 
 
-def do_plot():
-    states = list(get_states())
+def do_plot(limit=None):
+    states = list(get_states(limit))
     calc = [calculate(state) for state in states]
     fig, ax = plt.subplots()
     plot_effort(ax, calc)
@@ -487,14 +499,26 @@ def do_plot():
     return fig, ax
 
 
-def get_states():
+def get_states(limit=None):
+    if limit is not None and limit < 1:
+        raise click.ClickException(f"limit must be greter than 0")
     state = State()
     if os.path.exists("graey.db"):
         with codecs.open("graey.db", "r") as f:
-            for line in f:
-                line = deserialize(line)
-                state = update_state(state, line)
-                yield state
+            count = 0
+            if limit is None:
+                for line in f:
+                    line = deserialize(line)
+                    state = update_state(state, line)
+                    yield state
+            else:
+                for line in f:
+                    line = deserialize(line)
+                    state = update_state(state, line)
+                    yield state
+                    count += 1
+                    if count >= limit:
+                        break
     else:
         nodb()
 

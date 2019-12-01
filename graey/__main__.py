@@ -1,0 +1,3 @@
+import graey
+
+graey.main()
