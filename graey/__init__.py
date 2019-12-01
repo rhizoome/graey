@@ -92,6 +92,22 @@ class State(Estimate):
     default_est = field(initial=1.0)
 
 
+db_error = "graey.db does not exist"
+minute_error = """a duration has the format HHMM, the minute part must always be lower than 60
+
+Correct: 20, 100, 0120, 120, 230, 0359
+Incorrect: 70, 170, 199"""
+merge_help = """
+Fix database after automatic or manual merge. If you want can also concat all versions of the database:
+
+    \b
+    cat graey.db.BASE graey.db.LOCAL graey.db.REMOTE > graey.db
+    gry merge
+
+The entries will be sorted by timestamp and deduplicated.
+""".strip()
+
+
 @click.group()
 def main():
     pass
@@ -174,7 +190,7 @@ def done(action, duration):
     try:
         cmd = table[action - 1][1]
     except IndexError:
-        raise click.ClickException(f"There is no task {action}")
+        raise click.ClickException(f"there is no task {action}")
     float_hours = duration_to_hours(duration)
     with codecs.open("graey.db", "a+") as f:
         s = serialize(f, Done(cmd.uuid, float_hours))
@@ -338,6 +354,16 @@ def csv():
 
 
 main.add_command(csv)
+
+
+@click.command(
+    short_help="fix database after automatic or manual merge", help=merge_help
+)
+def merge():
+    raise click.ClickException("not implemented")
+
+
+main.add_command(merge)
 
 
 def fmt(value):
@@ -560,10 +586,3 @@ def deserialize(ser):
 
 def nodb():
     raise click.ClickException(db_error)
-
-
-db_error = "graey.db does not exist"
-minute_error = """A duration has the format HHMM, the minute part must always be lower than 60
-
-Correct: 20, 100, 0120, 120, 230, 0359
-Incorrect: 70, 170, 199"""
