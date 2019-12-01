@@ -94,7 +94,7 @@ html
 
 Example_
 
-.. _Example: http://1042.ch/42/ganwell/graey.html
+.. _Example: https://1042.ch/42/ganwell/graey.html
 
 Tasks
 -----
