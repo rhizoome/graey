@@ -171,3 +171,5 @@ TODO
 
 * taskwarrior like IDs that don't change, but only get reused if it is free
   agian
+
+* Use reuse for license
