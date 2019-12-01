@@ -14,7 +14,7 @@ it will use the last third of the data-points.
 You can also add your own prediction of how much work you will discover. I call
 this gräy tasks.
 
-Gräy can only work if you update gräy as you complete actions or you discover
+Gräy can only work if you update gräy as you complete actions or discover
 new actions.
 
 .. raw:: html
