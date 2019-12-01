@@ -226,7 +226,7 @@ def tasks():
         )
     )
     factor = calc_factor(state)
-    print(f"average projection: {avg_task_projection(state, factor)}")
+    print(f"average projection: {avg_task_projection(state, factor):8.2f}")
 
 
 main.add_command(tasks)
