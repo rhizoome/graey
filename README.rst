@@ -40,7 +40,7 @@ Actions
            predictions.
 
 Duration
-           The time an action actually took in hours.
+           The time an actions, task or the whole project actually took in hours.
 
 Estimate
            The time estimated for actions, task or the whole project.

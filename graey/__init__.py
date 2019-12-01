@@ -376,14 +376,14 @@ def save(limit):
 main.add_command(save)
 
 
-@click.command(help="output as csv (projection, done)")
+@click.command(help="output as csv (projection, duration)")
 @click.option(
     "--limit", "-l", type=click.INT, default=None, help="limit",
 )
 def csv(limit):
     for state in get_states(limit):
-        prj, done = calculate(state)
-        print(prj, done)
+        projection, duration = calculate(state)
+        print(projection, duration)
 
 
 main.add_command(csv)
@@ -562,10 +562,10 @@ def correct(item, factor):
 def calculate(state):
     factor = calc_factor(state)
     _, avg_projection = avg_task_projection(state, factor)
-    proj = correct(state, factor) + state.graey * avg_projection
-    done = state.duration
-    assert proj >= done
-    return proj, done
+    projection = correct(state, factor) + state.graey * avg_projection
+    duration = state.duration
+    assert projection >= duration
+    return projection, duration
 
 
 def update_state(state, line):
