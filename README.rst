@@ -89,8 +89,46 @@ Features
      stats  display stats
      tasks  show known tasks
 
+Tasks
+-----
+
+.. code-block:: text
+
+   $> gry tasks
+    ─────────────────────────────────────────────────────────────────────────────────
+     task   projection   projection (corr)   remaining   remaining (corr)   estimate
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        b         7.00                7.00        0.00               0.00       8.00
+    ─────────────────────────────────────────────────────────────────────────────────
+        a        10.00               10.00        0.00               0.00       4.00
+    ─────────────────────────────────────────────────────────────────────────────────
+   average projection:     8.50h    |    average actions:     4.00
+
+Show
+----
+
+The slowest sandwhich maker in the world:
+
+.. code-block:: text
+
+   $> gry show
+    ───────────────────────────────────────────────────
+     id            task              action   estimate
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      1   make sandwich           get bread        1.0
+    ───────────────────────────────────────────────────
+      2   make sandwich         slice bread        1.0
+    ───────────────────────────────────────────────────
+      3   make sandwich     get ingredients        1.0
+    ───────────────────────────────────────────────────
+      4   make sandwich   layer ingredients        1.0
+    ───────────────────────────────────────────────────
+      5   make sandwich                 eat        1.0
+    ───────────────────────────────────────────────────
+     gräy: 0   |   default estimate: 1.0
+
 Stats
-=====
+-----
 
 .. code-block:: text
 
