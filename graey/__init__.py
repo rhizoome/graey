@@ -298,8 +298,8 @@ def stats():
 main.add_command(stats)
 
 
-@click.command(help="display graph")
-def graph():
+@click.command(help="display plot")
+def plot():
     import_plt()
     matplotlib.use("TkAgg")
     fig, ax = plot()
@@ -314,10 +314,10 @@ def graph():
     plt.show()
 
 
-main.add_command(graph)
+main.add_command(plot)
 
 
-@click.command(help="save graph")
+@click.command(help="save plot")
 def save():
     import_plt()
     fig, ax = plot()
