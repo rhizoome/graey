@@ -312,6 +312,7 @@ def stats(from_, limit):
     rem_corr = lastc[0] - last.duration
     factor = calc_factor(last)
     avg_actions, avg_projection = avg_task_projection(last, factor)
+    print(f"data-points:            {len(states):8d}")
     print(f"actions:                {last.all:8d}")
     print(f"actions (done):         {last.done:8d}")
     print(f"actions (open):         {last.open:8d}")
