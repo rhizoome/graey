@@ -288,10 +288,13 @@ main.add_command(est)
 
 @click.command(help="display stats")
 @click.option(
+    "--from", "-f", "from_", type=click.INT, default=0, help="from",
+)
+@click.option(
     "--limit", "-l", type=click.INT, default=None, help="limit",
 )
-def stats(limit):
-    states = list(get_states(limit))
+def stats(from_, limit):
+    states = list(get_states(from_, limit))
     calc = [calculate(state) for state in states]
     last = states[-1]
     lastc = calc[-1]
@@ -342,12 +345,15 @@ main.add_command(stats)
 
 @click.command(help="display plot")
 @click.option(
+    "--from", "-f", "from_", type=click.INT, default=0, help="from",
+)
+@click.option(
     "--limit", "-l", type=click.INT, default=None, help="limit",
 )
-def plot(limit):
+def plot(from_, limit):
     import_plt()
     matplotlib.use("TkAgg")
-    fig, ax = do_plot(limit)
+    fig, ax = do_plot(from_, limit)
     try:
         out = check_output(["xrdb", "-query"])
         for line in out.decode("UTF-8").splitlines():
@@ -364,11 +370,14 @@ main.add_command(plot)
 
 @click.command(help="save plot as html")
 @click.option(
+    "--from", "-f", "from_", type=click.INT, default=0, help="from",
+)
+@click.option(
     "--limit", "-l", type=click.INT, default=None, help="limit",
 )
-def save(limit):
+def save(from_, limit):
     import_plt()
-    fig, ax = do_plot(limit)
+    fig, ax = do_plot(from_, limit)
     mpld3.save_html(fig, "graey.html")
     print("saved plot to graey.html")
 
@@ -378,10 +387,13 @@ main.add_command(save)
 
 @click.command(help="output as csv (projection, duration)")
 @click.option(
+    "--from", "-f", "from_", type=click.INT, default=0, help="from",
+)
+@click.option(
     "--limit", "-l", type=click.INT, default=None, help="limit",
 )
-def csv(limit):
-    for state in get_states(limit):
+def csv(from_, limit):
+    for state in get_states(from_, limit):
         projection, duration = calculate(state)
         print(projection, duration)
 
@@ -485,8 +497,8 @@ def plot_prediction(ax, calc):
     return part
 
 
-def do_plot(limit=None):
-    states = list(get_states(limit))
+def do_plot(from_=0, limit=None):
+    states = list(get_states(from_, limit))
     calc = [calculate(state) for state in states]
     fig, ax = plt.subplots()
     plot_effort(ax, calc)
@@ -504,26 +516,21 @@ def do_plot(limit=None):
     return fig, ax
 
 
-def get_states(limit=None):
+def get_states(from_=0, limit=None):
     if limit is not None and limit < 1:
         raise click.ClickException(f"limit must be greter than 0")
     state = State()
     if os.path.exists("graey.db"):
         with codecs.open("graey.db", "r") as f:
             count = 0
-            if limit is None:
-                for line in f:
-                    line = deserialize(line)
-                    state = update_state(state, line)
+            for line in f:
+                line = deserialize(line)
+                state = update_state(state, line)
+                if count >= from_:
                     yield state
-            else:
-                for line in f:
-                    line = deserialize(line)
-                    state = update_state(state, line)
-                    yield state
-                    count += 1
-                    if count >= limit:
-                        break
+                count += 1
+                if limit is not None and count >= limit:
+                    break
     else:
         nodb()
 
