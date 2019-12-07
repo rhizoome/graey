@@ -459,9 +459,12 @@ def prediction(calc):
             return part, x0, y0, x1, 0
         m = (y1 - y0) / (x1 - x0)
         b = y0 - x0 * ((y1 - y0) / (x1 - x0))
-        return part, x0, y0, -(b / m), 0
+        g = -(b / m)
+        if (x0 > x1) is (x0 > g):
+            return part, x0, y0, g, 0
     except ZeroDivisionError:
-        return part, None, None, None, None
+        pass
+    return part, None, None, None, None
 
 
 def plot_effort(ax, calc):
