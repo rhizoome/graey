@@ -541,13 +541,13 @@ def avg_task_projection(state, factor):
     if tasks:
         projection = 0
         avg_actions = sum([x.all for x in tasks.values()]) / len(tasks)
-        fill_actions = math.ceil(avg_actions)
+        # fill_actions = math.ceil(avg_actions)
         # fill_actions = max(4, avg_actions)  # No sure if I want this
         for task in tasks.values():
             all = task.all
             unknown = 0
-            if all < fill_actions and task.open:
-                unknown = max(0, fill_actions - all)
+            if all < avg_actions and task.open:
+                unknown = max(0, avg_actions - all)
             projection += (
                 unknown * state.default_est * factor
                 + (task.projection - task.duration) * factor
