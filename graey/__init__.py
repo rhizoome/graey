@@ -253,7 +253,7 @@ def tasks():
     factor = calc_factor(state)
     avg_actions, avg_projection = avg_task_projection(state, factor)
     print(
-        f"average projection: {avg_projection:8.2f}h    |"
+        f"  average projection: {avg_projection:8.2f}h    |"
         f"    average actions: {avg_actions:8.2f}"
     )
 
