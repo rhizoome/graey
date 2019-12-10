@@ -161,15 +161,15 @@ def show(task):
                 alignment="r",
             )
         )
-        state = None
-        for state in get_states():
-            pass
-        if state:
-            print(f"  gräy: {count}   |   default estimate: {state.default_est}")
-        else:
-            print(f"  gräy: {count}")
     else:
         print("There are no open actions")
+    state = None
+    for state in get_states():
+        pass
+    if state:
+        print(f"  gräy: {count}   |   default estimate: {state.default_est}")
+    else:
+        print(f"  gräy: {count}")
 
 
 main.add_command(show)
@@ -650,7 +650,7 @@ def get_table():
                 meta, cmd = deserialize(line)
                 if meta[1] == "add":
                     state[cmd.uuid] = cmd
-                elif meta[1] == "set":
+                elif meta[1] == "gry":
                     count = int(cmd.count)
                 elif meta[1] in ("del", "done"):
                     del state[cmd.uuid]
