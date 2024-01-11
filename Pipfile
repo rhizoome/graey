@@ -20,7 +20,7 @@ prompt-toolkit = "<3"
 [packages]
 graey = {editable = true,extras = ["fast"],path = "."}
 matplotlib = "<4"
-jinja2 = "<3"
+jinja2 = "<4"
 numpy = "<2"
 
 [requires]
