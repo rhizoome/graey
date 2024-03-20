@@ -6,7 +6,7 @@ verify_ssl = true
 [dev-packages]
 pytest = "<6"
 pdbpp = "<1"
-black = "==19.10b0"
+black = "==24.3.0"
 vmprof = "<1"
 isort = "<5"
 python-language-server = "<1"
